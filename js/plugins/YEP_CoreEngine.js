@@ -1788,19 +1788,14 @@ Sprite_Button.prototype.isButtonTouched = function() {
 // Sprite_Battleback
 //=============================================================================
 
-function Sprite_Battleback() {
-    this.initialize.apply(this, arguments);
+class Sprite_Battleback extends Sprite {
+    constructor(bitmapName, type) {
+        super();
+        this._bitmapName = bitmapName;
+        this._battlebackType = type;
+        this.createBitmap();
+    }
 }
-
-Sprite_Battleback.prototype = Object.create(Sprite.prototype);
-Sprite_Battleback.prototype.constructor = Sprite_Battleback;
-
-Sprite_Battleback.prototype.initialize = function(bitmapName, type) {
-    Sprite.prototype.initialize.call(this);
-    this._bitmapName = bitmapName;
-    this._battlebackType = type;
-    this.createBitmap();
-};
 
 Sprite_Battleback.prototype.createBitmap = function() {
     if (this._bitmapName === '') {
