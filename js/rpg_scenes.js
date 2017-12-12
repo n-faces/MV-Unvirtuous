@@ -570,6 +570,7 @@ class Scene_Map extends Scene_Base {
             this.startFadeIn(this.fadeSpeed(), false);
         }
         this.menuCalling = false;
+        this.characterCalling = false;
     };
 
     update() {
@@ -760,19 +761,19 @@ class Scene_Map extends Scene_Base {
 
     updateCallNavigator() {
         if (this.isNavigatorEnabled()) {
-            if (this.isMenuCalled()) {
+            if (this.isMenuCalled() && !$gamePlayer.isMoving()) {
                 this.menuCalling = true;
             }
 
-            if (this.isCharacterCalled()) {
+            if (this.isCharacterCalled() && !$gamePlayer.isMoving()) {
                 this.characterCalling = true;
             }
 
-            if (this.menuCalling && !$gamePlayer.isMoving()) {
+            if (this.menuCalling) {
                 this.callMenu();
             }
 
-            if (this.characterCalling && !$gamePlayer.isMoving()) {
+            if (this.characterCalling) {
                 this.callCharacter();
             }
         } else {
@@ -1036,12 +1037,13 @@ class Scene_Character extends Scene_MenuBase {
 
     createGoldWindow() {
         this._goldWindow = new Window_Gold(0, 0);
-        this._goldWindow.y = Graphics.boxHeight - this._goldWindow.height;
+        this._goldWindow.x = Graphics.boxWidth - this._goldWindow.width;
         this.addWindow(this._goldWindow);
     };
 
     createStatusWindow() {
-        this._statusWindow = new Window_MenuStatus(this._commandWindow.width, 0);
+        this._statusWindow = new Window_MenuStatus(0, this._commandWindow.height);
+        this._statusWindow.height = Graphics.height - this._commandWindow.height;
         this._statusWindow.reserveFaceImages();
         this.addWindow(this._statusWindow);
     };
@@ -2201,18 +2203,22 @@ class Scene_Battle extends Scene_Base {
     };
 
     start() {
-        if (!SceneManager.isPreviousScene(Scene_Menu)) {
-            super.start();
-            this.startFadeIn(this.fadeSpeed(), false);
-            BattleManager.playBattleBgm();
-            BattleManager.startBattle();
-        } else {
-            super.start();
-            BattleManager.continueBattle();
-            if (BattleManager._phase === 'input')  {
-                this._statusWindow.open();
-                this._skillBar.open();
-            }
+        switch (SceneManager._previousClass) {
+            case Scene_Menu:
+            case Scene_Character:
+                super.start();
+                BattleManager.continueBattle();
+                if (BattleManager._phase === 'input')  {
+                    this._statusWindow.open();
+                    this._skillBar.open();
+                }
+                break;
+            default:
+                super.start();
+                this.startFadeIn(this.fadeSpeed(), false);
+                BattleManager.playBattleBgm();
+                BattleManager.startBattle();
+                break;
         }
     };
 
@@ -2257,8 +2263,12 @@ class Scene_Battle extends Scene_Base {
 
     stop() {
         super.stop();
-        if (SceneManager.isNextScene(Scene_Menu)) {
-            SceneManager.snapForBackground();
+        if (SceneManager._nextScene) {
+            switch (SceneManager._nextScene.constructor) {
+                case Scene_Menu:
+                case Scene_Character:
+                    SceneManager.snapForBackground();
+            }
         }
         if (this.needsSlowFadeOut()) {
             this.startFadeOut(this.slowFadeSpeed(), false);
@@ -2287,32 +2297,16 @@ class Scene_Battle extends Scene_Base {
             this._statusWindow.close();
             this._enemyStatusWindow.close();
             this._skillBar.close();
+            this._navigator.close();
         } else if (this.isActive() && !this._messageWindow.isClosing()) {
             this._statusWindow.open();
             this._enemyStatusWindow.open();
+            this._navigator.open();
         }
     };
 
     isSceneChangeOk() {
         return this.isActive() && !$gameMessage.isBusy();
-    };
-
-    updateScene() {
-        if (!SceneManager.isSceneChanging()) {
-            this.updateCallMenu();
-        }
-    };
-
-    updateCallMenu() {
-        if ($gameSystem.isNavigatorEnabled()) {
-            this.callMenu();
-        }
-    };
-
-    callMenu() {
-        SoundManager.playOk();
-        SceneManager.push(Scene_Menu);
-        Window_MenuCommand.initCommandPosition();
     };
 
     createDisplayObjects() {
@@ -2349,6 +2343,7 @@ class Scene_Battle extends Scene_Base {
     createNavigator() {
         this._navigator = new Window_Navigator();
         this._navigator.setHandler('menu', this.onMenuCalled.bind(this));
+        this._navigator.setHandler('character', this.onCharacterCalled.bind(this));
         this.addChild(this._navigator);
     };
 
@@ -2505,9 +2500,28 @@ class Scene_Battle extends Scene_Base {
 
     onMenuCalled() {
         if (this.isSceneChangeOk()) {
-            this.updateScene();
+            if (!SceneManager.isSceneChanging()) {
+                if (!$gamePlayer.isMoving()) {
+                    this._statusWindow.close();
+                    this._skillBar.close();
+                    SceneManager.push(Scene_Menu);
+                    Window_MenuCommand.initCommandPosition();
+                }
+            }
         }
     };
+
+    onCharacterCalled() {
+        if (this.isSceneChangeOk()) {
+            if (!SceneManager.isSceneChanging()) {
+                if (!$gamePlayer.isMoving()) {
+                    this._statusWindow.close();
+                    this._skillBar.close();
+                    SceneManager.push(Scene_Character);
+                }
+            }
+        }
+    }
 
     onActorOk() {
         var action = BattleManager.inputtingAction();
@@ -2676,7 +2690,6 @@ Cần 2 sub-stage
 1 fixed là Game UI
 và 1 camera là Scene
  */
-
 
 /*
 PIXI.utils.TextureCache['source'];

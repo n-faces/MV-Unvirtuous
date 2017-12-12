@@ -2149,7 +2149,6 @@ SceneManager._deltaTime = 1.0 / 60.0;
 if (!Utils.isMobileSafari()) SceneManager._currentTime = SceneManager._getTimeInMsWithoutMobileSafari();
 SceneManager._accumulator = 0.0;
 
-
 //-----------------------------------------------------------------------------
 // BattleManager
 //
@@ -2838,7 +2837,6 @@ class BattleManager {
         });
     };
 }
-
 
 //-----------------------------------------------------------------------------
 // PluginManager

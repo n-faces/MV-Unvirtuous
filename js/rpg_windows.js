@@ -1663,11 +1663,11 @@ function Window_CharacterCommand() {
     this.initialize.apply(this, arguments);
 }
 
-Window_CharacterCommand.prototype = Object.create(Window_Command.prototype);
+Window_CharacterCommand.prototype = Object.create(Window_HorzCommand.prototype);
 Window_CharacterCommand.prototype.constructor = Window_CharacterCommand;
 
 Window_CharacterCommand.prototype.initialize = function(x, y) {
-    Window_Command.prototype.initialize.call(this, x, y);
+    Window_HorzCommand.prototype.initialize.call(this, x, y);
     this.selectLast();
 };
 
@@ -1678,11 +1678,7 @@ Window_CharacterCommand.initCommandPosition = function() {
 };
 
 Window_CharacterCommand.prototype.windowWidth = function() {
-    return 240;
-};
-
-Window_CharacterCommand.prototype.numVisibleRows = function() {
-    return this.maxItems();
+    return 800;
 };
 
 Window_CharacterCommand.prototype.makeCommandList = function() {
@@ -1775,7 +1771,7 @@ Window_MenuStatus.prototype.initialize = function(x, y) {
 };
 
 Window_MenuStatus.prototype.windowWidth = function() {
-    return Graphics.boxWidth - 240;
+    return Graphics.boxWidth;
 };
 
 Window_MenuStatus.prototype.windowHeight = function() {
@@ -6389,8 +6385,6 @@ Window_Player.prototype.mirrorParams = function() {
     this.mpGauge.display.scale.x = -1;
 };
 
-
-
 /*
 Window_HorzCommand.prototype.update = function() {
     Window_Command.prototype.update.call(this);
@@ -6399,23 +6393,6 @@ Window_HorzCommand.prototype.update = function() {
     }
 };
 */
-
-function Window_GoldBar() {
-    this.initialize.apply(this, arguments);
-}
-
-Window_GoldBar.prototype.initialize = function() {
-    var goldBar = new Container_Buttons();
-    goldBar.setWidth(0.18 * SceneManager._screenWidth);
-    goldBar.setHeight(0.05 * SceneManager._screenHeight);
-    goldBar.x = SceneManager._screenWidth - goldBar.widthValue;
-    goldBar.y = this.navigator.y;
-    goldBar.amount = 666;
-    goldBar.drawInner({color: 0x222222, lineColor: 0xcccc00, lineWidth: 2});
-    goldBar.text = new PIXI.Text(goldBar.amount, {fontSize: 20, fontFamily: "Arial", fill: "yellow"});
-    goldBar.text.right(goldBar.inner, 10);
-    goldBar.addChild(goldBar.text);
-};
 
 function Window_Navigator() {
     this.initialize.apply(this, arguments);
@@ -6509,22 +6486,32 @@ Window_Navigator.prototype.update = function() {
 Window_Navigator.prototype.updateCursor = function() {
 };
 
+Window_Navigator.prototype.isCurrentItemEnabled = function() {
+    return $gameSystem.isNavigatorEnabled();
+};
+
 Window_Navigator.prototype.processHandling = function() {
     if (this.isOpenAndActive()) {
-        if (this.isMenuTriggered()) {
+        if (this.isMenuPressed()) {
             this.processMenu();
+        } else if (this.isCharacterPressed()) {
+            this.processCharacter();
         } else if (this.isCancelEnabled() && this.isCancelTriggered()) {
             this.processCancel();
-        } else if (this.isHandled('pagedown') && Input.isTriggered('pagedown')) {
+        } else if (this.isHandled('pagedown') && Input.isPressed('pagedown')) {
             this.processPagedown();
-        } else if (this.isHandled('pageup') && Input.isTriggered('pageup')) {
+        } else if (this.isHandled('pageup') && Input.isPressed('pageup')) {
             this.processPageup();
         }
     }
 };
 
-Window_Navigator.prototype.isMenuTriggered = function() {
+Window_Navigator.prototype.isMenuPressed = function() {
     return Input.isRepeated('menu');
+};
+
+Window_Navigator.prototype.isCharacterPressed = function() {
+    return Input.isRepeated('character');
 };
 
 Window_Navigator.prototype.processMenu = function() {
@@ -6533,6 +6520,17 @@ Window_Navigator.prototype.processMenu = function() {
         this.updateInputData();
         this.deactivate();
         this.callHandler('menu');
+    } else {
+        this.playBuzzerSound();
+    }
+};
+
+Window_Navigator.prototype.processCharacter = function() {
+    if (this.isCurrentItemEnabled()) {
+        this.playOkSound();
+        this.updateInputData();
+        this.deactivate();
+        this.callHandler('character');
     } else {
         this.playBuzzerSound();
     }
@@ -6562,10 +6560,3 @@ Window_Navigator.prototype.onTouch = function(triggered) {
         SoundManager.playCursor();
     }
 };
-
-//=============================================================================================
-// CURRENT ISSUES
-/*
- * Target Bar: cố định, không thay đổi khi chuyển target
- * PLayer Bar: chỉ lấy 2 player.
- */
