@@ -1,6 +1,6 @@
-Dự án RPG Unvirtuous
+# Dự án RPG Unvirtuous
 
-Hưởng dẫn dành cho nhà phát triển:
+## Hưởng dẫn dành cho nhà phát triển:
 1.	Tải RPG Maker MV phiên bản mới nhất về máy.
 2.	Tải bản nw.js (node-webkit) SDK (phiên bản dành cho nhà phát triển) về máy.
 3.	Tạo Project mới bằng RPG Maker MV.
