@@ -276,7 +276,7 @@ class UNV_BattleManager {
         this.enemyChar = null;
     };
 
-    static resetSquare = function () {
+    static resetSquare() {
         this.currentSquares.counter = 0;
     };
 
@@ -286,7 +286,7 @@ class UNV_BattleManager {
         }
     };
 
-    static add = function (element, type) {
+    static add(element, type) {
         if (Array.isArray(element)) for (i = 0; i < element.length; i++) {
             this[type + "s"].push(element[i]);
         } else this[type + "s"].push(element);
@@ -304,11 +304,11 @@ class UNV_BattleManager {
         } else this.parallel.push(this[req]);
     };
 
-    static shift = function () {
+    static shift() {
         this.queue.shift();
     };
 
-    static shiftParallel = function () {
+    static shiftParallel() {
         this.parallel.shift();
     };
 //--------------------
@@ -357,7 +357,7 @@ class UNV_BattleManager {
         this.shift();
     };
 
-    static castSpell = function () {
+    static castSpell() {
         this.currentChar.playNonLoop("basic");
         this.currentEffect.x = this.enemyChar.battler.x;
         this.currentEffect.y = this.enemyChar.battler.y;
@@ -367,7 +367,7 @@ class UNV_BattleManager {
         this.shift();
     };
 
-    static rangedAttack = function () {
+    static rangedAttack() {
         this.currentChar.playNonLoop("basic");
         this.currentEffect.movementDuration = 40;
         this.currentEffect.homeX = this.currentChar.battler.homeX;
@@ -379,7 +379,7 @@ class UNV_BattleManager {
         this.shift();
     };
 
-    static moveProjectile = function () {
+    static moveProjectile() {
         if (collisionCheck(this.currentEffect, this.enemyChar.battler)) {
             this.currentEffect.visible = false;
             this.requestParallel(["playVoice", "computeDamage"]);
@@ -387,27 +387,27 @@ class UNV_BattleManager {
         } else this.moveSpriteTo(this.currentEffect, this.enemyChar.battler.homeX, this.enemyChar.battler.homeY);
     };
 
-    static moveSpriteTo = function (sprite, x, y) {
+    static moveSpriteTo(sprite, x, y) {
         var d = sprite.movementDuration;
         sprite.x = (sprite.x * (d - 1) + x) / d;
         sprite.y = (sprite.y * (d - 1) + y) / d;
         sprite.movementDuration--;
     };
 
-    static setRunDuration = function () {
+    static setRunDuration() {
         this.currentChar.battler.movementDuration = 50;
         this.currentChar.playNonLoop("sprint");
         this.shift();
     };
 
-    static runForward = function () {
+    static runForward() {
         if (collisionCheck(this.currentChar.battler, this.enemyChar.battler)) {
             this.currentChar.battler.movementDuration = 50;
             this.shift();
         } else this.moveSpriteTo(this.currentChar.battler, this.enemyChar.battler.homeX, this.enemyChar.battler.homeY);
     };
 
-    static meleeSprite = function () {
+    static meleeSprite() {
         this.currentChar.playNonLoop("basic");
         this.currentEffect.x = this.enemyChar.battler.x;
         this.currentEffect.y = this.enemyChar.battler.y;
@@ -417,7 +417,7 @@ class UNV_BattleManager {
         this.shift();
     };
 
-    static runBack = function () {
+    static runBack() {
         this.moveSpriteTo(this.currentChar.battler, this.currentChar.battler.homeX, this.currentChar.battler.homeY);
         if (this.currentChar.battler.movementDuration === 0) {
             this.currentChar.battler.movementDuration = null;
@@ -425,7 +425,7 @@ class UNV_BattleManager {
         }
     };
 
-    static attack = function () {
+    static attack() {
         if (this.currentChar.battler.currentFrame === this.currentChar.battler.textures.length - 1) {
             if (this.currentEffect.currentFrame === this.currentEffect.textures.length - 1) {
                 this.currentEffect.visible = false;
@@ -435,12 +435,12 @@ class UNV_BattleManager {
         }
     };
 
-    static idleAnimation = function () {
+    static idleAnimation() {
         this.currentChar.playLoop("idle");
         this.shift();
     };
 
-    static changeSquares = function () {
+    static changeSquares() {
         this.currentSquares.counter++;
         var previous = this.enemySquares;
         this.enemySquares = this.currentSquares;
@@ -448,7 +448,7 @@ class UNV_BattleManager {
         this.shift();
     };
 
-    static endTurn = function () {
+    static endTurn() {
         if (!this.currentSquares.children[this.currentSquares.counter].char) {
             this.currentSquares.counter++;
             if (this.currentSquares.counter > 8) this.resetSquare();
@@ -464,7 +464,7 @@ class UNV_BattleManager {
         }
     };
 
-    static changeSkillTexture = function () {
+    static changeSkillTexture() {
         for (var i = 0; i < SceneManager._scene.skillBar.array.length; i++) {
             SceneManager._scene.skillBar.array[i].changeTexture(0);
             if (i < this.currentChar.skills.length) SceneManager._scene.skillBar.array[i].changeTexture(this.currentChar.skills[i].texture);
@@ -564,7 +564,7 @@ class UNV_BattleManager {
         }
     };
 
-    static currentBarWidth = function (bar) {
+    static currentBarWidth(bar) {
         return bar.baseWidth * bar.hp.value / bar.hp.baseValue;
     };
 
