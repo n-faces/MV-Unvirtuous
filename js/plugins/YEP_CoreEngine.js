@@ -2164,7 +2164,7 @@ Window_Command.prototype.itemTextAlign = function() {
 // Window_MenuStatus
 //=============================================================================
 
-Window_MenuStatus.prototype.drawItemImage = function(index) {
+Window_CharacterStatus.prototype.drawItemImage = function(index) {
     var actor = $gameParty.members()[index];
     var rect = this.itemRect(index);
     this.changePaintOpacity(actor.isBattleMember());
@@ -2173,7 +2173,7 @@ Window_MenuStatus.prototype.drawItemImage = function(index) {
     this.changePaintOpacity(true);
 };
 
-Window_MenuStatus.prototype.drawItemStatus = function(index) {
+Window_CharacterStatus.prototype.drawItemStatus = function(index) {
     var actor = $gameParty.members()[index];
     var rect = this.itemRect(index);
     var xpad = Yanfly.Param.WindowPadding + Window_Base._faceWidth;

@@ -2,6 +2,8 @@
 // rpg_windows.js v1.5.1
 //=============================================================================
 
+'use strict';
+
 //-----------------------------------------------------------------------------
 // Window_Base
 //
@@ -532,8 +534,7 @@ Window_Base.prototype.drawActorIcons = function(actor, x, y, width) {
     }
 };
 
-Window_Base.prototype.drawCurrentAndMax = function(current, max, x, y,
-                                                   width, color1, color2) {
+Window_Base.prototype.drawCurrentAndMax = function(current, max, x, y, width, color1, color2) {
     var labelWidth = this.textWidth('HP');
     var valueWidth = this.textWidth('0000');
     var slashWidth = this.textWidth('/');
@@ -710,6 +711,25 @@ Window_Base.prototype.reserveFaceImages = function() {
     $gameParty.members().forEach(function(actor) {
         ImageManager.reserveFace(actor.faceName());
     }, this);
+};
+
+Window_Base.prototype.makeWindowStatic = function() {
+    this.removeArrows();
+    this.removePauseSign();
+    this.removeCursor();
+};
+
+Window_Base.prototype.removeArrows = function() {
+    this._downArrowSprite = null;
+    this._upArrowSprite = null;
+};
+
+Window_Base.prototype.removePauseSign = function() {
+    this._windowPauseSignSprite = null;
+};
+
+Window_Base.prototype.removeCursor = function() {
+    this._windowCursorSprite = null;
 };
 
 //-----------------------------------------------------------------------------
@@ -1557,6 +1577,152 @@ Window_Gold.prototype.open = function() {
 };
 
 //-----------------------------------------------------------------------------
+// Window_Navigator
+//
+// The window containing buttons for Menu, Character and Objectives
+
+function Window_Navigator() {
+    this.initialize.apply(this, arguments);
+}
+
+Window_Navigator._iconWidth = 32;
+Window_Navigator._iconHeight = 32;
+
+Window_Navigator.prototype = Object.create(Window_HorzCommand.prototype);
+Window_Navigator.prototype.constructor = Window_Navigator;
+
+Window_Navigator.prototype.initialize = function() {
+    this._updateArrows = this._refreshArrows = function() {};
+    this._updatePauseSign = this._refreshPauseSign = function() {};
+    this._updateCursor = this._refreshCursor = function() {};
+    this.updateCursor = function() {};
+    var sx = (Graphics.boxWidth - this.windowWidth())/2;
+    Window_HorzCommand.prototype.initialize.call(this, sx, 0);
+    this.makeWindowStatic();
+    this.openness = 255;
+    this.refresh();
+    this.show();
+    this.activate();
+};
+
+/*
+Window_HorzCommand.prototype.update = function() {
+    Window_Command.prototype.update.call(this);
+    if (this._itemWindow) {
+        this._itemWindow.setCategory(this.currentSymbol());
+    }
+};
+*/
+
+Window_Navigator.prototype.standardPadding = function() {
+    return 8;
+};
+
+Window_Navigator.prototype.windowWidth = function() {
+    return 768;
+};
+
+Window_Navigator.prototype.windowHeight = function() {
+    return (Window_Navigator._iconHeight + this.standardPadding() * 2) + 8;
+};
+
+Window_Navigator.prototype.spacing = function() {
+    return 6;
+};
+
+Window_Navigator.prototype.maxRows = function() {
+    return 1;
+};
+
+Window_Navigator.prototype.maxCols = function() {
+    return 4;
+};
+
+Window_Navigator.prototype.itemRect = function(index) {
+    var rect = new Rectangle();
+    rect.width = this.itemWidth();
+    rect.height = this.itemHeight();
+    rect.x = index % this.maxCols() * (rect.width + this.spacing()) - this._scrollX;
+    rect.y = Math.floor(index / this.maxCols()) * rect.height - this._scrollY;
+    return rect;
+};
+
+Window_Navigator.prototype.makeCommandList = function() {
+    this.addCommand('Menu', 'mainmenu');
+    this.addCommand('Character', 'character');
+    this.addCommand('Objectives', 'objectives');
+};
+
+Window_Navigator.prototype.itemTextAlign = function() {
+    return 'center';
+};
+
+Window_Navigator.prototype.update = function() {
+    Window_Base.prototype.update.call(this);
+    this.processHandling();
+    this.processTouch();
+    this._stayCount++;
+};
+
+Window_Navigator.prototype.isCurrentItemEnabled = function() {
+    return $gameSystem.isNavigatorEnabled();
+};
+
+Window_Navigator.prototype.processHandling = function() {
+    if (this.isOpenAndActive()) {
+        if (this.isNavigatorCalled('mainmenu')) {
+            this.processNavigator('mainmenu');
+        } else if (this.isNavigatorCalled('character')) {
+            this.processNavigator('character');
+        } else if (this.isNavigatorCalled('objectives')) {
+            this.processNavigator('objectives');
+        } else if (this.isCancelEnabled() && this.isCancelTriggered()) {
+            this.processCancel();
+        }
+    }
+};
+
+Window_Navigator.prototype.isNavigatorCalled = function(name) {
+    return Input.isRepeated(name);
+};
+
+Window_Navigator.prototype.processNavigator = function(name) {
+    if (this.isCurrentItemEnabled()) {
+        this.playOkSound();
+        this.updateInputData();
+        this.deactivate();
+        this.callHandler(name);
+    } else {
+        this.playBuzzerSound();
+    }
+};
+
+Window_Navigator.prototype.onTouch = function(triggered) {
+    var lastIndex = this.index();
+    var x = this.canvasToLocalX(TouchInput.x);
+    var y = this.canvasToLocalY(TouchInput.y);
+    var hitIndex = this.hitTest(x, y);
+    if (hitIndex >= 0) {
+        if (hitIndex === this.index()) {
+            if (triggered) {
+                this.processNavigator('mainmenu');
+            }
+        } else if (this.isCursorMovable()) {
+            this.select(hitIndex);
+        }
+    } else if (this._stayCount >= 10) {
+        if (y < this.padding) {
+            this.cursorUp();
+        } else if (y >= this.height - this.padding) {
+            this.cursorDown();
+        }
+    }
+    if (this.index() !== lastIndex) {
+        SoundManager.playCursor();
+    }
+};
+
+//-----------------------------------------------------------------------------
 // Window_MenuCommand
 //
 // The window for selecting a command on the menu screen.
@@ -1659,35 +1825,39 @@ Window_MenuCommand.prototype.selectLast = function() {
 //
 // The window for selecting a command on the menu screen.
 
-function Window_CharacterCommand() {
+function Window_Character() {
     this.initialize.apply(this, arguments);
 }
 
-Window_CharacterCommand.prototype = Object.create(Window_HorzCommand.prototype);
-Window_CharacterCommand.prototype.constructor = Window_CharacterCommand;
+Window_Character.prototype = Object.create(Window_HorzCommand.prototype);
+Window_Character.prototype.constructor = Window_Character;
 
-Window_CharacterCommand.prototype.initialize = function(x, y) {
+Window_Character.prototype.initialize = function(x, y) {
     Window_HorzCommand.prototype.initialize.call(this, x, y);
     this.selectLast();
 };
 
-Window_CharacterCommand._lastCommandSymbol = null;
+Window_Character._lastCommandSymbol = null;
 
-Window_CharacterCommand.initCommandPosition = function() {
+Window_Character.initCommandPosition = function() {
     this._lastCommandSymbol = null;
 };
 
-Window_CharacterCommand.prototype.windowWidth = function() {
-    return 800;
+Window_Character.prototype.windowWidth = function() {
+    return 1000;
 };
 
-Window_CharacterCommand.prototype.makeCommandList = function() {
+Window_Character.prototype.maxCols = function() {
+    return 5;
+};
+
+Window_Character.prototype.makeCommandList = function() {
     this.addMainCommands();
     this.addFormationCommand();
     this.addOriginalCommands();
 };
 
-Window_CharacterCommand.prototype.addMainCommands = function() {
+Window_Character.prototype.addMainCommands = function() {
     var enabled = this.areMainCommandsEnabled();
     if (this.needsCommand('item')) {
         this.addCommand(TextManager.item, 'item', enabled);
@@ -1703,17 +1873,17 @@ Window_CharacterCommand.prototype.addMainCommands = function() {
     }
 };
 
-Window_CharacterCommand.prototype.addFormationCommand = function() {
+Window_Character.prototype.addFormationCommand = function() {
     if (this.needsCommand('formation')) {
         var enabled = this.isFormationEnabled();
         this.addCommand(TextManager.formation, 'formation', enabled);
     }
 };
 
-Window_CharacterCommand.prototype.addOriginalCommands = function() {
+Window_Character.prototype.addOriginalCommands = function() {
 };
 
-Window_CharacterCommand.prototype.needsCommand = function(name) {
+Window_Character.prototype.needsCommand = function(name) {
     var flags = $dataSystem.menuCommands;
     if (flags) {
         switch (name) {
@@ -1732,36 +1902,68 @@ Window_CharacterCommand.prototype.needsCommand = function(name) {
     return true;
 };
 
-Window_CharacterCommand.prototype.areMainCommandsEnabled = function() {
+Window_Character.prototype.areMainCommandsEnabled = function() {
     return $gameParty.exists();
 };
 
-Window_CharacterCommand.prototype.isFormationEnabled = function() {
+Window_Character.prototype.isFormationEnabled = function() {
     return $gameParty.size() >= 2 && $gameSystem.isFormationEnabled();
 };
 
-Window_CharacterCommand.prototype.processOk = function() {
-    Window_CharacterCommand._lastCommandSymbol = this.currentSymbol();
+Window_Character.prototype.processOk = function() {
+    Window_Character._lastCommandSymbol = this.currentSymbol();
     Window_Command.prototype.processOk.call(this);
 };
 
-Window_CharacterCommand.prototype.selectLast = function() {
-    this.selectSymbol(Window_CharacterCommand._lastCommandSymbol);
+Window_Character.prototype.selectLast = function() {
+    this.selectSymbol(Window_Character._lastCommandSymbol);
 };
 
 //-----------------------------------------------------------------------------
-// Window_MenuStatus
+// Window_MenuCommand
 //
-// The window for displaying party member status on the menu screen.
+// The window for selecting a command on the menu screen.
 
-function Window_MenuStatus() {
+function Window_Objectives() {
     this.initialize.apply(this, arguments);
 }
 
-Window_MenuStatus.prototype = Object.create(Window_Selectable.prototype);
-Window_MenuStatus.prototype.constructor = Window_MenuStatus;
+Window_Objectives.prototype = Object.create(Window_Command.prototype);
+Window_Objectives.prototype.constructor = Window_Objectives;
 
-Window_MenuStatus.prototype.initialize = function(x, y) {
+Window_Objectives.prototype.initialize = function(x, y) {
+    Window_Command.prototype.initialize.call(this, x, y);
+};
+
+Window_Objectives.prototype.windowWidth = function() {
+    return 960;
+};
+
+Window_Objectives.prototype.windowHeight = function() {
+    return this.fittingHeight(3);
+};
+
+Window_Objectives.prototype.maxCols = function() {
+    return 2;
+};
+
+Window_Objectives.prototype.maxRows = function() {
+    return 3;
+};
+
+//-----------------------------------------------------------------------------
+// Window_CharacterStatus
+//
+// The window for displaying party member status on the menu screen.
+
+function Window_CharacterStatus() {
+    this.initialize.apply(this, arguments);
+}
+
+Window_CharacterStatus.prototype = Object.create(Window_Selectable.prototype);
+Window_CharacterStatus.prototype.constructor = Window_CharacterStatus;
+
+Window_CharacterStatus.prototype.initialize = function(x, y) {
     var width = this.windowWidth();
     var height = this.windowHeight();
     Window_Selectable.prototype.initialize.call(this, x, y, width, height);
@@ -1770,40 +1972,40 @@ Window_MenuStatus.prototype.initialize = function(x, y) {
     this.refresh();
 };
 
-Window_MenuStatus.prototype.windowWidth = function() {
+Window_CharacterStatus.prototype.windowWidth = function() {
     return Graphics.boxWidth;
 };
 
-Window_MenuStatus.prototype.windowHeight = function() {
+Window_CharacterStatus.prototype.windowHeight = function() {
     return Graphics.boxHeight;
 };
 
-Window_MenuStatus.prototype.maxItems = function() {
+Window_CharacterStatus.prototype.maxItems = function() {
     return $gameParty.size();
 };
 
-Window_MenuStatus.prototype.itemHeight = function() {
+Window_CharacterStatus.prototype.itemHeight = function() {
     var clientHeight = this.height - this.padding * 2;
     return Math.floor(clientHeight / this.numVisibleRows());
 };
 
-Window_MenuStatus.prototype.numVisibleRows = function() {
+Window_CharacterStatus.prototype.numVisibleRows = function() {
     return 4;
 };
 
-Window_MenuStatus.prototype.loadImages = function() {
+Window_CharacterStatus.prototype.loadImages = function() {
     $gameParty.members().forEach(function(actor) {
         ImageManager.reserveFace(actor.faceName());
     }, this);
 };
 
-Window_MenuStatus.prototype.drawItem = function(index) {
+Window_CharacterStatus.prototype.drawItem = function(index) {
     this.drawItemBackground(index);
     this.drawItemImage(index);
     this.drawItemStatus(index);
 };
 
-Window_MenuStatus.prototype.drawItemBackground = function(index) {
+Window_CharacterStatus.prototype.drawItemBackground = function(index) {
     if (index === this._pendingIndex) {
         var rect = this.itemRect(index);
         var color = this.pendingColor();
@@ -1813,7 +2015,7 @@ Window_MenuStatus.prototype.drawItemBackground = function(index) {
     }
 };
 
-Window_MenuStatus.prototype.drawItemImage = function(index) {
+Window_CharacterStatus.prototype.drawItemImage = function(index) {
     var actor = $gameParty.members()[index];
     var rect = this.itemRect(index);
     this.changePaintOpacity(actor.isBattleMember());
@@ -1821,7 +2023,7 @@ Window_MenuStatus.prototype.drawItemImage = function(index) {
     this.changePaintOpacity(true);
 };
 
-Window_MenuStatus.prototype.drawItemStatus = function(index) {
+Window_CharacterStatus.prototype.drawItemStatus = function(index) {
     var actor = $gameParty.members()[index];
     var rect = this.itemRect(index);
     var x = rect.x + 162;
@@ -1830,12 +2032,12 @@ Window_MenuStatus.prototype.drawItemStatus = function(index) {
     this.drawActorSimpleStatus(actor, x, y, width);
 };
 
-Window_MenuStatus.prototype.processOk = function() {
+Window_CharacterStatus.prototype.processOk = function() {
     Window_Selectable.prototype.processOk.call(this);
     $gameParty.setMenuActor($gameParty.members()[this.index()]);
 };
 
-Window_MenuStatus.prototype.isCurrentItemEnabled = function() {
+Window_CharacterStatus.prototype.isCurrentItemEnabled = function() {
     if (this._formationMode) {
         var actor = $gameParty.members()[this.index()];
         return actor && actor.isFormationChangeOk();
@@ -1844,23 +2046,23 @@ Window_MenuStatus.prototype.isCurrentItemEnabled = function() {
     }
 };
 
-Window_MenuStatus.prototype.selectLast = function() {
+Window_CharacterStatus.prototype.selectLast = function() {
     this.select($gameParty.menuActor().index() || 0);
 };
 
-Window_MenuStatus.prototype.formationMode = function() {
+Window_CharacterStatus.prototype.formationMode = function() {
     return this._formationMode;
 };
 
-Window_MenuStatus.prototype.setFormationMode = function(formationMode) {
+Window_CharacterStatus.prototype.setFormationMode = function(formationMode) {
     this._formationMode = formationMode;
 };
 
-Window_MenuStatus.prototype.pendingIndex = function() {
+Window_CharacterStatus.prototype.pendingIndex = function() {
     return this._pendingIndex;
 };
 
-Window_MenuStatus.prototype.setPendingIndex = function(index) {
+Window_CharacterStatus.prototype.setPendingIndex = function(index) {
     var lastPendingIndex = this._pendingIndex;
     this._pendingIndex = index;
     this.redrawItem(this._pendingIndex);
@@ -1876,11 +2078,11 @@ function Window_MenuActor() {
     this.initialize.apply(this, arguments);
 }
 
-Window_MenuActor.prototype = Object.create(Window_MenuStatus.prototype);
+Window_MenuActor.prototype = Object.create(Window_CharacterStatus.prototype);
 Window_MenuActor.prototype.constructor = Window_MenuActor;
 
 Window_MenuActor.prototype.initialize = function() {
-    Window_MenuStatus.prototype.initialize.call(this, 0, 0);
+    Window_CharacterStatus.prototype.initialize.call(this, 0, 0);
     this.hide();
 };
 
@@ -5392,6 +5594,8 @@ Window_SkillBar.prototype = Object.create(Window_HorzCommand.prototype);
 Window_SkillBar.prototype.constructor = Window_SkillBar;
 
 Window_SkillBar.prototype.initialize = function() {
+    this._updateArrows = this._refreshArrows = function() {};
+    this._updatePauseSign = this._refreshPauseSign = function() {};
     Window_HorzCommand.prototype.initialize.call(this, 0, 0);
     this._downArrowSprite = null;
     this._upArrowSprite = null;
@@ -5402,23 +5606,21 @@ Window_SkillBar.prototype.initialize = function() {
     this.deactivate();
 };
 
-//-----------------------------------------------------------------------------
-// Remove unnecessary updates
-
-Window_SkillBar.prototype.updateTransform = function() {
-    this._updateCursor();
-    this._updateContents();
-    PIXI.Container.prototype.updateTransform.call(this);
+Window_SkillBar.prototype._updateCursor = function() {
+    var blinkCount = this._animationCount % 80;
+    var cursorOpacity = this.contentsOpacity;
+    if (this._animationCount < 120 && this.active) {
+        if (blinkCount < 40) {
+            cursorOpacity -= blinkCount * 8;
+        } else {
+            cursorOpacity -= (80 - blinkCount) * 8;
+        }
+    } else {
+        cursorOpacity = 0;
+    }
+    this._windowCursorSprite.alpha = cursorOpacity / 255;
+    this._windowCursorSprite.visible = this.isOpen();
 };
-
-Window_SkillBar.prototype._refreshAllParts = function() {
-    this._refreshBack();
-    this._refreshFrame();
-    this._refreshCursor();
-    this._refreshContents();
-};
-
-//-----------------------------------------------------------------------------
 
 Window_SkillBar.prototype.windowWidth = function() {
     return this.maxCols() * Window_SkillBar._iconWidth + this.standardPadding();
@@ -5517,6 +5719,15 @@ Window_SkillBar.prototype.selectLast = function() {
             }
         }
     }
+};
+
+Window_SkillBar.prototype.select = function(index) {
+    this._index = index;
+    this._animationCount = 0;
+    this._stayCount = 0;
+    this.ensureCursorVisible();
+    this.updateCursor();
+    this.callUpdateHelp();
 };
 
 Window_SkillBar.prototype.itemTextAlign = function() {
@@ -5628,32 +5839,25 @@ Window_TargetBar.prototype = Object.create(Window_Selectable.prototype);
 Window_TargetBar.prototype.constructor = Window_TargetBar;
 
 Window_TargetBar.prototype.initialize = function() {
-    this._enemies = [];
+    this._updateArrows = this._refreshArrows = function() {};
+    this._updatePauseSign = this._refreshPauseSign = function() {};
+    this._updateCursor = this._refreshCursor = function() {};
+    this._currentTarget = null;
     var width = this.windowWidth();
     var height = this.windowHeight();
     var sx = Graphics.boxWidth - width;
     Window_Selectable.prototype.initialize.call(this, sx, 0, width, height);
-    this._downArrowSprite = null;
-    this._upArrowSprite = null;
-    this._windowCursorSprite = null;
-    this._windowPauseSignSprite = null;
+    this.makeWindowStatic();
     this.refresh();
     this.opacity = 0;
 };
 
+Window_TargetBar.prototype.updateBattler = function(battler) {
+    this._currentTarget = battler;
+};
+
 //-----------------------------------------------------------------------------
 // Remove cursor and arrows
-
-Window_TargetBar.prototype.updateTransform = function() {
-    this._updateContents();
-    PIXI.Container.prototype.updateTransform.call(this);
-};
-
-Window_TargetBar.prototype._refreshAllParts = function() {
-    this._refreshBack();
-    this._refreshFrame();
-    this._refreshContents();
-};
 
 //-----------------------------------------------------------------------------
 
@@ -5665,14 +5869,12 @@ Window_TargetBar.prototype.windowHeight = function() {
     return this.fittingHeight(1);
 };
 
-Window_TargetBar.prototype.maxItems = function() {
-    return this._enemies.length;
-};
-
-Window_TargetBar.prototype.drawItem = function(index) {
-    var enemy = this._enemies[index];
-    this.drawGaugeArea(this.gaugeAreaRect(index), enemy);
-    this.drawBasicArea(this.basicAreaRect(index), enemy);
+Window_TargetBar.prototype.drawItem = function() {
+    var enemy = this._currentTarget;
+    if (enemy) {
+        this.drawGaugeArea(this.gaugeAreaRect(0), enemy);
+        this.drawBasicArea(this.basicAreaRect(0), enemy);
+    }
 };
 
 /*
@@ -5714,16 +5916,15 @@ Window_TargetBar.prototype.drawBasicArea = function(rect, actor) {
 };
 
 Window_TargetBar.prototype.maxItems = function() {
-    return this._enemies.length;
+    return 1;
 };
 
 Window_TargetBar.prototype.enemy = function() {
-    return this._enemies[this.index()];
+    return this._currentEnemy;
 };
 
 Window_TargetBar.prototype.enemyIndex = function() {
-    var enemy = this.enemy();
-    return enemy ? enemy.index() : -1;
+    return this.enemy() ? this.enemy().index() : -1;
 };
 
 Window_TargetBar.prototype.show = function() {
@@ -5732,7 +5933,6 @@ Window_TargetBar.prototype.show = function() {
 };
 
 Window_TargetBar.prototype.refresh = function() {
-    this._enemies = $gameTroop.members();
     this.contents.clear();
     this.drawAllItems();
 };
@@ -5956,6 +6156,7 @@ Window_TitleCommand.prototype.makeCommandList = function() {
     this.addCommand(TextManager.continue_, 'continue', this.isContinueEnabled());
     this.addCommand(TextManager.options,   'options');
     this.addCommand('Exit',   'exit');
+    this.addCommand('Edit Mode');
 };
 
 Window_TitleCommand.prototype.isContinueEnabled = function() {
@@ -6237,11 +6438,10 @@ Window_Base.prototype.inactiveGaugeColor = function() {
     return this.textColor(5);
 };
 */
-//=============================================================================================
-//Game UI, Menu & Skill Buttons
 
-//=================
-//-------------------
+//=============================================================================================
+// Retained Window from old project
+// Game UI, Menu & Skill Buttons
 
 function Window_Player() {
     this.initialize.apply(this, arguments);
@@ -6280,19 +6480,6 @@ Window_Player.prototype.setMirror = function(scale) {
 
 Window_Player.prototype.mirrorSttBar = function() {
     this.bar.scale.x *= -1;
-};
-
-Window_Player.prototype.setPosition = function(index) {
-    var pctX, pctY;
-    if (index < 3) {
-        pctX = pct(1, SceneManager._screenWidth);
-        pctY = index === 1 ? pct(2, SceneManager._screenHeight) : pctY = pct(5, SceneManager._screenHeight);
-    } else {
-        pctX = pct(98, SceneManager._screenWidth);
-        pctY = pct(2, SceneManager._screenHeight);
-    }
-    this.bar.x = pctX;
-    this.bar.y = pctY;
 };
 
 Window_Player.prototype.drawAvatar = function() {
@@ -6383,180 +6570,4 @@ Window_Player.prototype.center = function() {
 Window_Player.prototype.mirrorParams = function() {
     this.hpGauge.display.scale.x = -1;
     this.mpGauge.display.scale.x = -1;
-};
-
-/*
-Window_HorzCommand.prototype.update = function() {
-    Window_Command.prototype.update.call(this);
-    if (this._itemWindow) {
-        this._itemWindow.setCategory(this.currentSymbol());
-    }
-};
-*/
-
-function Window_Navigator() {
-    this.initialize.apply(this, arguments);
-}
-
-Window_Navigator._iconWidth = 32;
-Window_Navigator._iconHeight = 32;
-
-Window_Navigator.prototype = Object.create(Window_HorzCommand.prototype);
-Window_Navigator.prototype.constructor = Window_Navigator;
-
-Window_Navigator.prototype.initialize = function() {
-    Window_HorzCommand.prototype.initialize.call(this, 0, 0);
-    this._downArrowSprite = null;
-    this._upArrowSprite = null;
-    this._windowCursorSprite = null;
-    this._windowPauseSignSprite = null;
-    this.openness = 255;
-    this.refresh();
-    this.show();
-    this.activate();
-};
-
-//-----------------------------------------------------------------------------
-// Remove unnecessary updates
-
-Window_Navigator.prototype.updateTransform = function() {
-    this._updateContents();
-    PIXI.Container.prototype.updateTransform.call(this);
-};
-
-Window_Navigator.prototype._refreshAllParts = function() {
-    this._refreshBack();
-    this._refreshFrame();
-    this._refreshContents();
-};
-
-//-----------------------------------------------------------------------------
-
-Window_Navigator.prototype.standardPadding = function() {
-    return 8;
-};
-
-Window_Navigator.prototype.windowWidth = function() {
-    return Graphics.boxWidth;
-};
-
-Window_Navigator.prototype.windowHeight = function() {
-    return (Window_Navigator._iconHeight + this.standardPadding() * 2) + 8;
-};
-
-Window_Navigator.prototype.spacing = function() {
-    return 6;
-};
-
-Window_Navigator.prototype.maxRows = function() {
-    return 1;
-};
-
-Window_Navigator.prototype.maxCols = function() {
-    return 4;
-};
-
-Window_Navigator.prototype.itemRect = function(index) {
-    var rect = new Rectangle();
-    rect.width = this.itemWidth();
-    rect.height = this.itemHeight();
-    rect.x = index % this.maxCols() * (rect.width + this.spacing()) - this._scrollX;
-    rect.y = Math.floor(index / this.maxCols()) * rect.height - this._scrollY;
-    return rect;
-};
-
-Window_Navigator.prototype.makeCommandList = function() {
-    this.addCommand('Menu', 'menu');
-    this.addCommand('Character', 'character');
-    this.addCommand('Objectives', 'objectives');
-    this.addCommand('Gold', 'gold');
-};
-
-Window_Navigator.prototype.itemTextAlign = function() {
-    return 'center';
-};
-
-Window_Navigator.prototype.update = function() {
-    Window_Base.prototype.update.call(this);
-    this.processHandling();
-    this.processTouch();
-    this._stayCount++;
-};
-
-Window_Navigator.prototype.updateCursor = function() {
-};
-
-Window_Navigator.prototype.isCurrentItemEnabled = function() {
-    return $gameSystem.isNavigatorEnabled();
-};
-
-Window_Navigator.prototype.processHandling = function() {
-    if (this.isOpenAndActive()) {
-        if (this.isMenuPressed()) {
-            this.processMenu();
-        } else if (this.isCharacterPressed()) {
-            this.processCharacter();
-        } else if (this.isCancelEnabled() && this.isCancelTriggered()) {
-            this.processCancel();
-        } else if (this.isHandled('pagedown') && Input.isPressed('pagedown')) {
-            this.processPagedown();
-        } else if (this.isHandled('pageup') && Input.isPressed('pageup')) {
-            this.processPageup();
-        }
-    }
-};
-
-Window_Navigator.prototype.isMenuPressed = function() {
-    return Input.isRepeated('menu');
-};
-
-Window_Navigator.prototype.isCharacterPressed = function() {
-    return Input.isRepeated('character');
-};
-
-Window_Navigator.prototype.processMenu = function() {
-    if (this.isCurrentItemEnabled()) {
-        this.playOkSound();
-        this.updateInputData();
-        this.deactivate();
-        this.callHandler('menu');
-    } else {
-        this.playBuzzerSound();
-    }
-};
-
-Window_Navigator.prototype.processCharacter = function() {
-    if (this.isCurrentItemEnabled()) {
-        this.playOkSound();
-        this.updateInputData();
-        this.deactivate();
-        this.callHandler('character');
-    } else {
-        this.playBuzzerSound();
-    }
-};
-
-Window_Navigator.prototype.onTouch = function(triggered) {
-    var lastIndex = this.index();
-    var x = this.canvasToLocalX(TouchInput.x);
-    var y = this.canvasToLocalY(TouchInput.y);
-    var hitIndex = this.hitTest(x, y);
-    if (hitIndex >= 0) {
-        if (hitIndex === this.index()) {
-            if (triggered ) {
-                this.processMenu();
-            }
-        } else if (this.isCursorMovable()) {
-            this.select(hitIndex);
-        }
-    } else if (this._stayCount >= 10) {
-        if (y < this.padding) {
-            this.cursorUp();
-        } else if (y >= this.height - this.padding) {
-            this.cursorDown();
-        }
-    }
-    if (this.index() !== lastIndex) {
-        SoundManager.playCursor();
-    }
 };

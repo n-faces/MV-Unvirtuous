@@ -2,6 +2,8 @@
 // rpg_sprites.js v1.5.1
 //=============================================================================
 
+'use strict';
+
 //-----------------------------------------------------------------------------
 // Sprite_Base
 //
@@ -551,9 +553,6 @@ class Sprite_Battler extends Sprite_Base {
         this.updatePosition();
     };
 
-    //-----------------------------------------------------------------------------
-    //Create
-
     createMainSprite() {
         this._mainSprite = new Sprite_Base();
         this._mainSprite.anchor.x = 0.5;
@@ -589,8 +588,23 @@ class Sprite_Battler extends Sprite_Base {
         return -8;
     };
 
-    //-----------------------------------------------------------------------------
-    //Update
+    canvasToLocalX(x) {
+        var node = this;
+        while (node) {
+            x -= node.x;
+            node = node.parent;
+        }
+        return x;
+    };
+
+    canvasToLocalY(y) {
+        var node = this;
+        while (node) {
+            y -= node.y;
+            node = node.parent;
+        }
+        return y;
+    };
 
     update() {
         super.update();
@@ -601,11 +615,40 @@ class Sprite_Battler extends Sprite_Base {
             this.updateSelectionEffect();
             this.updateMotion();
             if (this._isEnemy) this.updateEffect();
+            this.processStatusBar();
         } else {
             this.bitmap = null;
         }
         this.updateShadow();
     };
+
+    processStatusBar() {
+        if (TouchInput.isTriggered() && this.isSpriteTouched()) {
+            this._hovering = true;
+        }
+
+        if (this._hovering) {
+            if (!this._isStatusUpdated) {
+                this.updateStatusBar();
+                this._isStatusUpdated = true;
+            }
+            if (!this.isSpriteTouched()) {
+                this._hovering = false;
+                this._isStatusUpdated = false;
+            }
+        }
+    };
+
+    isSpriteTouched() {
+        // 33 và 69 là biện pháp tạm thời;
+        var x = this.canvasToLocalX(TouchInput.x) + 33;
+        var y = this.canvasToLocalY(TouchInput.y) + 69;
+        return x >= 0 && y >= 0 && x < this.cellWidth() && y < this.cellHeight();
+    };
+
+    updateStatusBar() {
+        BattleManager.updateStatusBar(this._battler);
+    }
 
     updateVisibility() {
         super.updateVisibility();
@@ -707,6 +750,7 @@ class Sprite_Battler extends Sprite_Base {
         var bitmap = this._mainSprite.bitmap;
         if (bitmap) {
             this.updateScale();
+            // Anti alias and và thiếu margin làm cho sheet chồng chéo lên nhau. 9 là biện pháp tạm thời;
             var cw = Math.floor(bitmap.width / 7) - 9;
             var ch = Math.floor(bitmap.height / 5);
             this._mainSprite.setFrame(0, 0, cw, ch);
@@ -723,7 +767,6 @@ class Sprite_Battler extends Sprite_Base {
             var cx = pattern;
             var cy = motionIndex % 4;
             this._mainSprite.setFrame(cx * cw, cy * ch, cw, ch);
-
         }
         */
     };
@@ -743,6 +786,14 @@ class Sprite_Battler extends Sprite_Base {
         this.scale.y *= ratio;
         this._scaled = true;
     };
+
+    cellWidth() {
+        return this._mainSprite.bitmap.width * this.scale.x / 7;
+    }
+
+    cellHeight() {
+        return this._mainSprite.bitmap.height * this.scale.y / 5;
+    }
 
     updateMotion() {
         this.setupMotion();
@@ -766,7 +817,6 @@ class Sprite_Battler extends Sprite_Base {
             this._motionCount = 0;
         }
     };
-
 
     motionSpeed() {
         return 8;
@@ -1100,6 +1150,17 @@ Sprite_Battler.MOTIONS = {
     asleep:     {index: 14, patterns: 7, loop: true}
 };
 
+class Sprite_Enemy extends Sprite_Battler {
+    constructor(battler, enemy) {
+        super(battler, enemy);
+    }
+}
+
+class Sprite_Actor extends Sprite_Battler {
+    constructor(battler, enemy) {
+        super(battler, enemy);
+    }
+}
 
 //-----------------------------------------------------------------------------
 // Sprite_Animation
