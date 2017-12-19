@@ -6,6 +6,20 @@
  * @plugindesc Some helper functions
 */
 
+class UNV {
+    constructor() {
+        throw new Error('This is a static class');
+    }
+
+    static processMapNOTETAGS() {
+        // Name
+        var regex = new RegExp(/<[Oo]bj(ective)?\s?\d:(\s*[\w,;'\"\\s]+)+[.?!]>/);
+        // Description
+        var regex2 = new RegExp(/<[Oo]bj(ective)?\s?\d\s?desc(ription)?:(\s*[\w,;'\"\\s]+)+[.?!]>/)
+
+        return regex;
+    };
+}
 PIXI.Text.prototype.center = function(container) {
     this.anchor.set(0.5);
     this.x = container.x + container.width / 2 ;
@@ -566,11 +580,6 @@ class UNV_BattleManager {
 
     static currentBarWidth(bar) {
         return bar.baseWidth * bar.hp.value / bar.hp.baseValue;
-    };
-
-    static playBattleBgm() {
-        AudioManager.playBgm($gameSystem.battleBgm());
-        AudioManager.stopBgs();
     };
 
 }
