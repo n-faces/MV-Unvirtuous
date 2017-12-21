@@ -3643,6 +3643,7 @@ class Game_Ally extends Game_Battler {
     };
 
 }
+
 class Game_Actor extends Game_Battler {
     constructor(actorId) {
         super();

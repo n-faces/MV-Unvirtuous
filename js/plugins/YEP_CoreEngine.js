@@ -1221,8 +1221,7 @@ Yanfly.openConsole = function() {
 // BattleManager
 //=============================================================================
 
-Yanfly.Core.BattleManager_displayStartMessages =
-    BattleManager.displayStartMessages;
+Yanfly.Core.BattleManager_displayStartMessages = BattleManager.displayStartMessages;
 BattleManager.displayStartMessages = function() {
     Yanfly.Core.BattleManager_displayStartMessages.call(this);
     $gameTroop.members().forEach(function(enemy) {
@@ -1311,18 +1310,6 @@ Game_Actor.prototype.learnSkill = function(skillId) {
     }
 };
 
-if (Utils.RPGMAKER_VERSION && Utils.RPGMAKER_VERSION >= '1.3.4') {
-
-    Game_Actor.prototype.meetsUsableItemConditions = function(item) {
-        if($gameParty.inBattle() && !BattleManager.canEscape() &&
-            this.testEscape(item)){
-            return false;
-        }
-        return Game_BattlerBase.prototype.meetsUsableItemConditions.call(this, item);
-    };
-
-}; // Utils.RPGMAKER_VERSION && Utils.RPGMAKER_VERSION >= '1.3.4'
-
 //=============================================================================
 // Game_Party
 //=============================================================================
@@ -1348,25 +1335,6 @@ Game_Party.prototype.onPlayerWalk = function() {
 //=============================================================================
 // Game_Map
 //=============================================================================
-
-Yanfly.isPreventScreenJittering = function() {
-    if (Utils.RPGMAKER_VERSION && Utils.RPGMAKER_VERSION >= '1.3.4') return false;
-    return true;
-};
-
-if (Yanfly.isPreventScreenJittering()) {
-
-    Game_Map.prototype.displayX = function() {
-        return parseFloat(Math.floor(this._displayX *
-            this.tileWidth())) / this.tileWidth();
-    };
-
-    Game_Map.prototype.displayY = function() {
-        return parseFloat(Math.floor(this._displayY *
-            this.tileHeight())) / this.tileHeight();
-    };
-
-}; // Yanfly.isPreventScreenJittering
 
 Game_Map.prototype.adjustX = function(x) {
     if (this.isLoopHorizontal() && x < this.displayX() -
@@ -1419,8 +1387,7 @@ Game_Character.prototype.queueMoveRoute = function(moveRoute) {
     this._originalMoveRouteIndex = 0;
 };
 
-Yanfly.Core.Game_Event_setMoveRoute =
-    Game_Event.prototype.setMoveRoute;
+Yanfly.Core.Game_Event_setMoveRoute = Game_Event.prototype.setMoveRoute;
 Game_Character.prototype.setMoveRoute = function(moveRoute) {
     if (!this._moveRouteForcing) {
         Yanfly.Core.Game_Event_setMoveRoute.call(this, moveRoute);
@@ -1429,8 +1396,7 @@ Game_Character.prototype.setMoveRoute = function(moveRoute) {
     }
 };
 
-Yanfly.Core.Game_Character_processMoveCommand =
-    Game_Character.prototype.processMoveCommand;
+Yanfly.Core.Game_Character_processMoveCommand = Game_Character.prototype.processMoveCommand;
 Game_Character.prototype.processMoveCommand = function(command) {
     var gc = Game_Character;
     var params = command.parameters;
@@ -1507,8 +1473,7 @@ Game_Action.prototype.evalDamageFormula = function(target) {
 //=============================================================================
 
 // Conditional Branch
-Yanfly.Core.Game_Interpreter_command111 =
-    Game_Interpreter.prototype.command111;
+Yanfly.Core.Game_Interpreter_command111 = Game_Interpreter.prototype.command111;
 Game_Interpreter.prototype.command111 = function() {
     var result = false;
     switch (this._params[0]) {
@@ -1529,8 +1494,7 @@ Game_Interpreter.prototype.command111 = function() {
 };
 
 // Control Variables
-Yanfly.Core.Game_Interpreter_command122 =
-    Game_Interpreter.prototype.command122;
+Yanfly.Core.Game_Interpreter_command122 = Game_Interpreter.prototype.command122;
 Game_Interpreter.prototype.command122 = function() {
     switch (this._params[3]) {
         case 4:  // Script
@@ -1565,8 +1529,7 @@ Game_Interpreter.prototype.command355 = function() {
     return true;
 };
 
-Yanfly.Core.Game_Interpreter_pluginCommand =
-    Game_Interpreter.prototype.pluginCommand;
+Yanfly.Core.Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
 Game_Interpreter.prototype.pluginCommand = function(command, args) {
     Yanfly.Core.Game_Interpreter_pluginCommand.call(this, command, args);
     if (command === 'GainGold') {
@@ -1638,7 +1601,7 @@ if (Yanfly.Param.CollectionClear) {
         this.clearChildren();
     };
 
-}; // Yanfly.Param.CollectionClear
+}
 
 //=============================================================================
 // Scene_Boot
@@ -1692,15 +1655,12 @@ Scene_Title.prototype.rescaleTitleSprite = function(sprite) {
 //=============================================================================
 
 if (Yanfly.Param.ShowEvTrans) {
-
     Scene_Map.prototype.startEncounterEffect = function() {
         this._encounterEffectDuration = this.encounterEffectSpeed();
     };
+} // Yanfly.Param.ShowEvTrans
 
-}; // Yanfly.Param.ShowEvTrans
-
-Yanfly.Core.Scene_Map_snapForBattleBackground =
-    Scene_Map.prototype.snapForBattleBackground;
+Yanfly.Core.Scene_Map_snapForBattleBackground = Scene_Map.prototype.snapForBattleBackground;
 Scene_Map.prototype.snapForBattleBackground = function() {
     if (!Yanfly.Param.ShowEvSnap) this._spriteset.hideCharacters();
     Yanfly.Core.Scene_Map_snapForBattleBackground.call(this);
@@ -2094,8 +2054,7 @@ Window_Base.prototype.drawActorTp = function(actor, x, y, width) {
     this.changeTextColor(this.systemColor());
     this.drawText(TextManager.tpA, x, y, 44);
     this.changeTextColor(this.tpColor(actor));
-    this.drawText(Yanfly.Util.toGroup(actor.tp), x + width - 64, y, 64,
-        'right');
+    this.drawText(Yanfly.Util.toGroup(actor.tp), x + width - 64, y, 64, 'right');
 };
 
 Window_Base.prototype.drawActorSimpleStatus = function(actor, x, y, width) {
@@ -2406,6 +2365,434 @@ Yanfly.Util.displayError = function(e, code, message) {
         }
     }
 };
+
+class UNV {
+    constructor() {
+        throw new Error('This is a static class');
+    }
+
+    static processObjectivesNOTETAGS() {
+        // Name
+        var regex = new RegExp(/<[Oo]bj(ective)?\s?\d:(\s*[\w,;'\"\\s]+)+[.?!]>/);
+        // Description
+        var regex2 = new RegExp(/<[Oo]bj(ective)?\s?\d\s?desc(ription)?:(\s*[\w,;'\"\\s]+)+[.?!]>/)
+
+        return regex;
+    };
+}
+
+UNV._dataObjectives = [];
+
+PIXI.Text.prototype.center = function(container) {
+    this.anchor.set(0.5);
+    this.x = container.x + container.width / 2 ;
+    this.y = container.y + container.height / 2;
+};
+
+PIXI.Text.prototype.right = function(container, padding) {
+    var p = padding ? padding : 0;
+    this.anchor.set(1, 0.5);
+    this.x = container.x + container.width - pct(p, container.width);
+    this.y = container.y  + container.height/2;
+};
+
+PIXI.Text.prototype.rightCorner = function(container, padding) {
+    var p = padding ? padding : 0;
+    this.anchor.set(1, 0);
+    this.x = container.x + container.width - p;
+    this.y = container.height - p;
+};
+
+PIXI.Text.prototype.leftCorner = function(container, padding) {
+    var p = padding ? padding : 0;
+    this.anchor.set(0, 0);
+    this.x = container.x + p;
+    this.y = container.y + p;
+};
+
+PIXI.Container.prototype.center = function (container) {
+    this.pivot.set(this.width/2, this.height/2);
+    this.x = container.width / 2;
+    this.y = container.height /2;
+};
+
+class AudioLoader {
+    static  loadAudio(musics, options, canplay) {
+        var n,name,
+            result = {};
+        for (n = 0; n < musics.length; ++n) {
+            name = musics[n];
+            result[name] = document.createElement("audio");
+            result[name].addEventListener("canplay", canplay, false);
+            result[name].volume = options.volume || 0.1;
+            result[name].loop = options.loop || false;
+            result[name].src = "audio/sounds/" + name + ".mp3";
+        }
+        if (n === musics.length) {return result}
+    }
+
+    static  playAudio(audio) {
+        audio.pause();
+        audio.startTime = 0;
+        audio.play();
+    }
+
+}
+
+//AudioLoader.bgm = AudioLoader.loadAudio(musics, {volume: 1, loop: true});
+
+function sendToBack(sprite, parent) {
+    var sprite = (typeof sprite != "undefined") ? sprite.target || sprite : this;
+    var parent = parent || sprite.parent || {"children": false};
+    if (parent.children) {
+        for (var keyIndex in sprite.parent.children) {
+            if (sprite.parent.children[keyIndex] === sprite) {
+                sprite.parent.children.splice(keyIndex, 1);
+                break;
+            }
+        }
+        parent.children.splice(0,0,sprite);
+    }
+}
+
+class UNV_BattleManager {
+    constructor() {
+        throw new Error('This is a static class')
+    }
+
+    static start() {
+        this.phase = "input";
+        this.setSquare();
+        this.currentSquares = leftSquares;
+        this.enemySquares = rightSquares;
+        this.currentChar = leftSquares.children[this.currentSquares.counter].char;
+        this.request("changeSkillTexture")
+    };
+
+    static update() {
+        if (!this.isBusy()) {
+            switch (this.phase) {
+                case "input":
+                    this.checkButton();
+                    break;
+                case "computer":
+                    this.computer();
+                    break;
+                case "target":
+                    this.setTarget();
+                    break;
+                case "queue":
+                    break;
+                default: return true;
+            }
+            if (this.queue[0]) this.queue[0].call(this);
+            if (this.parallel[0]) this.parallel[0].call(this);
+            this.showDamage();
+            this.dropHp();
+            this.showText();
+            this.isGameOver();
+        }
+    };
+
+    static resetTurn() {
+        this.buttonValue = null;
+        this.currentSkill = null;
+        this.enemyChar = null;
+    };
+
+    static resetSquare() {
+        this.currentSquares.counter = 0;
+    };
+
+    static isGameOver() {
+        if (this.chars[0].bar.hp.value <= 0) {
+            SceneManager.change(credit);
+        }
+    };
+
+    static add(element, type) {
+        if (Array.isArray(element)) for (i = 0; i < element.length; i++) {
+            this[type + "s"].push(element[i]);
+        } else this[type + "s"].push(element);
+    };
+
+    static request(req) {
+        if (Array.isArray(req)) for (var i = 0; i < req.length; i++) {
+            this.queue.push(this[req[i]]);
+        } else this.queue.push(this[req]);
+    };
+
+    static requestParallel(req) {
+        if (Array.isArray(req)) for (var i = 0; i < req.length; i++) {
+            this.parallel.push(this[req[i]]);
+        } else this.parallel.push(this[req]);
+    };
+
+    static shift() {
+        this.queue.shift();
+    };
+
+    static shiftParallel() {
+        this.parallel.shift();
+    };
+//--------------------
+//Queued Methods
+    static requestBuilder() {
+        var queue = [];
+        queue.push("getData");
+        switch (this.currentChar.skills[this.buttonValue].type) {
+            case "melee":
+                queue.push("setRunDuration", "runForward", "meleeSprite", "attack", "runBack", "idleAnimation");
+                break;
+            case "spell":
+                queue.push("castSpell", "attack", "idleAnimation");
+                break;
+            case "ranged":
+                queue.push("rangedAttack", "moveProjectile", "idleAnimation");
+                break;
+            default:
+                return true;
+        }
+        queue.push("changeSquares", "endTurn");
+        return queue;
+    };
+
+    static getData() {
+        var newEffect, type = this.currentSkill.type;
+        switch (type) {
+            case "melee":
+                newEffect = new Animation_Effect();
+                if (this.currentSkill.effect !== 0) newEffect.drawEffect("Melee", 1, 4, 4, 192, 192);
+                else newEffect.drawEffect("Melee", 0, 4, 4, 192, 192);
+                break;
+            case "ranged":
+                newEffect = new Sprite_Projectile();
+                newEffect.drawProjectile("Arrow", 0);
+                newEffect.scale.set(0.05);
+                break;
+            case "spell":
+                newEffect = new Animation_Effect();
+                newEffect.drawEffect("Spell", 0, 21, 5, 192, 192);
+                break;
+        }
+        this.currentEffect = newEffect;
+        this.currentSound = sounds[this.currentSkill.type + this.currentSkill.sound];
+        this.currentVoice = sounds["voice0"];
+        this.shift();
+    };
+
+    static castSpell() {
+        this.currentChar.playNonLoop("basic");
+        this.currentEffect.x = this.enemyChar.battler.x;
+        this.currentEffect.y = this.enemyChar.battler.y;
+        this.currentEffect.gotoAndPlay(0);
+        this.currentEffect.visible = true;
+        this.requestParallel(["playSound", "playVoice", "computeDamage"]);
+        this.shift();
+    };
+
+    static rangedAttack() {
+        this.currentChar.playNonLoop("basic");
+        this.currentEffect.movementDuration = 40;
+        this.currentEffect.homeX = this.currentChar.battler.homeX;
+        this.currentEffect.homeY = this.currentChar.battler.homeY;
+        this.currentEffect.x = this.currentEffect.homeX;
+        this.currentEffect.y = this.currentEffect.homeY;
+        this.currentEffect.visible = true;
+        this.requestParallel("playSound");
+        this.shift();
+    };
+
+    static moveProjectile() {
+        if (collisionCheck(this.currentEffect, this.enemyChar.battler)) {
+            this.currentEffect.visible = false;
+            this.requestParallel(["playVoice", "computeDamage"]);
+            this.shift();
+        } else this.moveSpriteTo(this.currentEffect, this.enemyChar.battler.homeX, this.enemyChar.battler.homeY);
+    };
+
+    static moveSpriteTo(sprite, x, y) {
+        var d = sprite.movementDuration;
+        sprite.x = (sprite.x * (d - 1) + x) / d;
+        sprite.y = (sprite.y * (d - 1) + y) / d;
+        sprite.movementDuration--;
+    };
+
+    static setRunDuration() {
+        this.currentChar.battler.movementDuration = 50;
+        this.currentChar.playNonLoop("sprint");
+        this.shift();
+    };
+
+    static runForward() {
+        if (collisionCheck(this.currentChar.battler, this.enemyChar.battler)) {
+            this.currentChar.battler.movementDuration = 50;
+            this.shift();
+        } else this.moveSpriteTo(this.currentChar.battler, this.enemyChar.battler.homeX, this.enemyChar.battler.homeY);
+    };
+
+    static meleeSprite() {
+        this.currentChar.playNonLoop("basic");
+        this.currentEffect.x = this.enemyChar.battler.x;
+        this.currentEffect.y = this.enemyChar.battler.y;
+        this.currentEffect.gotoAndPlay(0);
+        this.currentEffect.visible = true;
+        this.requestParallel(["playSound", "playVoice", "computeDamage"]);
+        this.shift();
+    };
+
+    static runBack() {
+        this.moveSpriteTo(this.currentChar.battler, this.currentChar.battler.homeX, this.currentChar.battler.homeY);
+        if (this.currentChar.battler.movementDuration === 0) {
+            this.currentChar.battler.movementDuration = null;
+            this.shift();
+        }
+    };
+
+    static attack() {
+        if (this.currentChar.battler.currentFrame === this.currentChar.battler.textures.length - 1) {
+            if (this.currentEffect.currentFrame === this.currentEffect.textures.length - 1) {
+                this.currentEffect.visible = false;
+                this.currentChar.playNonLoop("back");
+                this.shift();
+            }
+        }
+    };
+
+    static idleAnimation() {
+        this.currentChar.playLoop("idle");
+        this.shift();
+    };
+
+    static changeSquares() {
+        this.currentSquares.counter++;
+        var previous = this.enemySquares;
+        this.enemySquares = this.currentSquares;
+        this.currentSquares = previous;
+        this.shift();
+    };
+
+    static endTurn() {
+        if (!this.currentSquares.children[this.currentSquares.counter].char) {
+            this.currentSquares.counter++;
+            if (this.currentSquares.counter > 8) this.resetSquare();
+        } else {
+            this.currentChar = this.currentSquares.children[this.currentSquares.counter].char;
+            this.resetTurn();
+            if (this.currentSquares === leftSquares && this.currentChar.ally === "player") {
+                this.request("changeSkillTexture");
+                this.phase = "input";
+            }
+            else this.phase = "computer";
+            this.shift();
+        }
+    };
+
+    static changeSkillTexture() {
+        for (var i = 0; i < SceneManager._scene.skillBar.array.length; i++) {
+            SceneManager._scene.skillBar.array[i].changeTexture(0);
+            if (i < this.currentChar.skills.length) SceneManager._scene.skillBar.array[i].changeTexture(this.currentChar.skills[i].texture);
+        }
+        SceneManager._scene.skillBar.visible = true;
+        this.shift();
+    };
+//--------------------
+//Input Methods
+    static setSquare() {
+        for (var i = 0; i < this.chars.length; i++) {
+            if (this.chars[i].ally !== "enemy") this.chars[i].setSquarePosition(leftSquares);
+            else this.chars[i].setSquarePosition(rightSquares);
+            this.chars[i].updateDisplay();
+            this.chars[i].center();
+        }
+    };
+
+    static checkButton() {
+        if (this.phase === "input" && this.isButtonPressed()) {
+            var currentSkill = this.currentChar.skills[this.buttonValue];
+            if (currentSkill) {
+                SceneManager._scene.skillBar.visible = false;
+                this.currentSkill = currentSkill;
+                this.phase = "target";
+            }
+        }
+    };
+
+    static setTarget() {
+        if (this.isTargetSelected()) {
+            this.request(this.requestBuilder());
+            this.phase = "queue";
+        }
+    };
+
+    static computer() {
+        if (this.phase === "computer") {
+            this.buttonValue = randomInt(0, this.currentChar.skills.length - 1);
+            this.currentSkill = this.currentChar.skills[this.buttonValue];
+
+            var index = randomInt(0, 8);
+            if (this.currentSkill.target === "enemy") {
+                while (!this.enemySquares.children[index].char)
+                    index = this.chars[randomInt(0, this.chars.length - 1)].square;
+                this.enemyChar = this.enemySquares.children[index].char;
+            } else {
+                while (!this.currentSquares.children[index].char)
+                    index = this.chars[randomInt(0, this.chars.length - 1)].square;
+                this.enemyChar = this.currentSquares.children[index].char;
+            }
+            this.request(this.requestBuilder());
+            this.phase = "queue";
+        }
+    };
+
+    static isRear() {
+        var index = this.enemyChar.square - 3;
+        if (index < 0) return false;
+        return this.enemySquares.children[index].char;
+    };
+//--------------------
+//Parallel Methods - Graphics && Sounds
+
+    static showText() {
+        var text = this.currentText;
+        switch (this.phase) {
+            case "input":
+                text.text = "Your Turn";
+                text.style = {
+                    fontSize: 32, fontFamily: "Arial", fill: "#ffffff",
+                    fontWeight: "600", strokeThickness: 2
+                };
+                text.anchor.set(0.5);
+                text.x = SceneManager._screenWidth / 2;
+                text.y = SceneManager._scene.skillBar.y - 50;
+                SceneManager._scene.addChild(text);
+                break;
+            case "target":
+                text.text = "Choose a target";
+                text.style = {
+                    fontSize: 24, fontFamily: "Arial", fill: "#ffffff",
+                    fontWeight: "600", strokeThickness: 2
+                };
+                break;
+            default:
+                text.text = this.currentChar.name + " Turn";
+                text.style = {
+                    fontSize: 24, fontFamily: "Arial", fill: "#ffffff",
+                    fontWeight: "600", strokeThickness: 2
+                };
+                text.anchor.set(0.5);
+                text.x = SceneManager._screenWidth / 2;
+                text.y = SceneManager._scene.skillBar.y - 40;
+                SceneManager._scene.addChild(text);
+                break;
+        }
+    };
+
+    static currentBarWidth(bar) {
+        return bar.baseWidth * bar.hp.value / bar.hp.baseValue;
+    };
+
+}
 
 //=============================================================================
 // End of File

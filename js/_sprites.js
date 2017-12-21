@@ -614,7 +614,7 @@ class Sprite_Battler extends Sprite_Base {
             this.updateDamagePopup();
             this.updateSelectionEffect();
             this.updateMotion();
-            if (this._isEnemy) this.updateEffect();
+            this.updateEffect();
             this.processStatusBar();
         } else {
             this.bitmap = null;
@@ -946,12 +946,6 @@ class Sprite_Battler extends Sprite_Base {
         }
     };
 
-    stepForward() {
-        if (!this._isEnemy) {
-            this.startMove(48, 0, 12)
-        } else this.startMove(-48, 0, 12);
-    };
-
     stepBack() {
         this.startMove(0, 0, 12);
     };
@@ -1150,16 +1144,24 @@ Sprite_Battler.MOTIONS = {
     asleep:     {index: 14, patterns: 7, loop: true}
 };
 
-class Sprite_Enemy extends Sprite_Battler {
-    constructor(battler, enemy) {
-        super(battler, enemy);
-    }
-}
-
 class Sprite_Actor extends Sprite_Battler {
     constructor(battler, enemy) {
         super(battler, enemy);
     }
+
+    stepForward() {
+        this.startMove(448, 0, 24);
+    };
+}
+
+class Sprite_Enemy extends Sprite_Battler {
+    constructor(battler, enemy) {
+        super(battler, enemy);
+    }
+
+    stepForward() {
+        this.startMove(-448, 0, 36);
+    };
 }
 
 //-----------------------------------------------------------------------------
@@ -2146,7 +2148,7 @@ class Sprite_Squares extends Sprite_Base {
         d = this._spacing;
         dy = this._offset;
         totalWidth = -d;
-        this._isEnemy = index === 1 ? false : true;
+        this._isEnemy = (index !== 1);
 
         for (var i = 0; i < 9; i++) {
             square = new Sprite_BaseSquare();
@@ -2692,7 +2694,7 @@ class Spriteset_Battle extends Spriteset_Base {
         var sprites = [];
 
         for (var i = 0; i < enemies.length; i++) {
-            sprites[i] = new Sprite_Battler(enemies[i], true);
+            sprites[i] = new Sprite_Enemy(enemies[i], true);
         }
         sprites.sort(this.compareEnemySprite.bind(this));
         for (var i = 0; i < enemies.length; i++) {
@@ -2711,11 +2713,10 @@ class Spriteset_Battle extends Spriteset_Base {
         }
     };
 
-
     createActors() {
         this._actorSprites = [];
         for (var i = 0; i < $gameParty.maxBattleMembers(); i++) {
-            this._actorSprites[i] = new Sprite_Battler();
+            this._actorSprites[i] = new Sprite_Actor();
             this._battleField.addChild(this._actorSprites[i]);
         }
         this.setActors();

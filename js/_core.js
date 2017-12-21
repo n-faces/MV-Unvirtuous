@@ -236,9 +236,6 @@ class Physics {
 
     static checkCollision() {
         var hit, combinedHalfWidths, combinedHalfHeights, dx, dy;
-
-        hit = false;
-
         r1.centerX = r1.x + r1.width / 2;
         r1.centerY = r1.y + r1.height / 2;
         r2.centerX = r2.x + r2.width / 2;
@@ -250,39 +247,34 @@ class Physics {
         combinedHalfWidths = (r1.width + r2.width)/2;
         combinedHalfHeights = (r1.height + r2.height)/2;
 
-        if (Math.abs(dx) < combinedHalfWidths && Math.abs(dy) < combinedHalfHeights) {
-            hit = true;
-        } else {
-            hit = false;
-        }
+        hit = (Math.abs(dx) < combinedHalfWidths && Math.abs(dy) < combinedHalfHeights);
         return hit;
     }
 
-    static contain(sprite, container) {
-
-        let collision = undefined;
+    static contain(child, parent) {
+        var collision = false;
 
         //Left
-        if (sprite.x < container.x) {
-            sprite.x = container.x;
+        if (child.x < parent.x) {
+            child.x = parent.x;
             collision = "left";
         }
 
         //Top
-        if (sprite.y < container.y) {
-            sprite.y = container.y;
+        if (child.y < parent.y) {
+            child.y = parent.y;
             collision = "top";
         }
 
         //Right
-        if (sprite.x + sprite.width > container.width) {
-            sprite.x = container.width - sprite.width;
+        if (child.x + child.width > parent.width) {
+            child.x = parent.width - child.width;
             collision = "right";
         }
 
         //Bottom
-        if (sprite.y + sprite.height > container.height) {
-            sprite.y = container.height - sprite.height;
+        if (child.y + child.height > parent.height) {
+            child.y = parent.height - child.height;
             collision = "bottom";
         }
 
@@ -290,7 +282,6 @@ class Physics {
         return collision;
     }
 }
-
 
 //-----------------------------------------------------------------------------
 /**
@@ -6410,6 +6401,14 @@ class Window extends PIXI.Container {
         this._openness = 255;
         this._animationCount = 0;
 
+        /**
+         * Indicate if the window needs additional retouching or not
+         *
+         * @property retouch
+         * @type Boolean
+         */
+        this._retouch = false;
+
         this._padding = 18;
         this._margin = 4;
         this._colorTone = [0, 0, 0];
@@ -6463,6 +6462,8 @@ class Window extends PIXI.Container {
          * @type Boolean
          */
         this.pause = false;
+
+
     }
 
     initialize() {
@@ -6474,6 +6475,7 @@ class Window extends PIXI.Container {
         this._cursorRect = new Rectangle();
         this._openness = 255;
         this._animationCount = 0;
+        this._retouch = false;
         this._padding = 18;
         this._margin = 4;
         this._colorTone = [0, 0, 0];
@@ -6699,6 +6701,11 @@ class Window extends PIXI.Container {
             var skin = this._windowskin;
             var p = 96;
             var q = 96;
+
+            bitmap.blt(skin, 192, 0, 58, 28, 0, 0, 58, 28);
+            bitmap.blt(skin, 250, 0, 58, 28, w - 58, 0, 58, 28);
+            bitmap.blt(skin, 192, 68, 58, 28, 0, h - 28, 58, 28);
+            bitmap.blt(skin, 250, 68, 58, 28, w - 58, h - 28, 58, 28);
             bitmap.blt(skin, p + m, 0, p - m * 2, m, m, 0, w - m * 2, m);
             bitmap.blt(skin, p + m, 0 + q - m, p - m * 2, m, m, h - m, w - m * 2, m);
             bitmap.blt(skin, p, 0 + m, m, p - m * 2, 0, m, m, h - m * 2);
@@ -6707,6 +6714,9 @@ class Window extends PIXI.Container {
             bitmap.blt(skin, p + q - m, 0, m, m, w - m, 0, m, m);
             bitmap.blt(skin, p, 0 + q - m, m, m, 0, h - m, m, m);
             bitmap.blt(skin, p + q - m, 0 + q - m, m, m, w - m, h - m, m, m);
+            if (this._retouch) {
+                bitmap.blt(skin, 192, 96, 72, 48, w/2- 36, 0, 72, 48) // Hình tam giác ở giữa
+            }
         }
     };
 
@@ -7096,6 +7106,23 @@ Object.defineProperty(Window.prototype, 'openness', {
             this._windowSpriteContainer.scale.y = this._openness / 255;
             this._windowSpriteContainer.y = this.height / 2 * (1 - this._openness / 255);
         }
+    },
+    configurable: true
+});
+
+/**
+ * The indication if the window needs additional bitmap..
+ *
+ * @property retouch
+ * @type Boolean
+ */
+Object.defineProperty(Window.prototype, 'retouch', {
+    get: function () {
+        return this._retouch;
+    },
+    set: function (boolean) {
+        this._retouch = boolean;
+        this._refreshFrame();
     },
     configurable: true
 });

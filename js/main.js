@@ -7,6 +7,7 @@
 PluginManager.setup($plugins);
 
 (function checkTest(){
+    //location.protocol = 'file:';
     var href = location.href;
     var query = /\?test/;
     if (href.search(query) < 0) {

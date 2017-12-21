@@ -1144,7 +1144,6 @@ class Scene_Objectives extends Scene_MenuBase {
         this.addWindow(this._helpWindow);
     };
 
-
 }
 
 //-----------------------------------------------------------------------------
@@ -2241,6 +2240,7 @@ class Scene_Battle extends Scene_Base {
         switch (SceneManager._previousClass) {
             case Scene_Menu:
             case Scene_Character:
+            case Scene_Objectives:
                 super.start();
                 BattleManager.continueBattle();
                 if (BattleManager._phase === 'input')  {

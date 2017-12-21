@@ -2141,10 +2141,10 @@ SceneManager._sceneStarted      = false;
 SceneManager._exiting           = false;
 SceneManager._previousClass     = null;
 SceneManager._backgroundBitmap  = null;
-SceneManager._screenWidth       = 816;
-SceneManager._screenHeight      = 624;
-SceneManager._boxWidth          = 816;
-SceneManager._boxHeight         = 624;
+SceneManager._screenWidth       = 816; // Yanfly
+SceneManager._screenHeight      = 624; // Yanfly
+SceneManager._boxWidth          = 816; // Yanfly
+SceneManager._boxHeight         = 624; // Yanfly
 SceneManager._deltaTime = 1.0 / 60.0;
 if (!Utils.isMobileSafari()) SceneManager._currentTime = SceneManager._getTimeInMsWithoutMobileSafari();
 SceneManager._accumulator = 0.0;
@@ -2384,9 +2384,7 @@ class BattleManager {
         $gameSystem.onBattleStart();
         $gameParty.onBattleStart();
         $gameTroop.onBattleStart();
-        if (!SceneManager.isPreviousScene(Scene_Menu)) {
-            this.displayStartMessages();
-        }
+        this.displayStartMessages();
     };
 
     static continueBattle() {
