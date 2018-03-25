@@ -1,3 +1,7 @@
+//=============================================================================
+// _core.js
+//=============================================================================
+
 'use strict';
 
 //-----------------------------------------------------------------------------
@@ -44,7 +48,7 @@ Number.prototype.mod = function (n) {
  * @return {String} A formatted string
  */
 String.prototype.format = function () {
-    var args = arguments;
+    let args = arguments;
     return this.replace(/%([0-9]+)/g, function (s, n) {
         return args[Number(n) - 1];
     });
@@ -58,7 +62,7 @@ String.prototype.format = function () {
  * @return {String} A string with leading zeros
  */
 String.prototype.padZero = function (length) {
-    var s = this;
+    let s = this;
     while (s.length < length) {
         s = '0' + s;
     }
@@ -90,7 +94,7 @@ Object.defineProperties(Array.prototype, {
             if (!array || this.length !== array.length) {
                 return false;
             }
-            for (var i = 0; i < this.length; i++) {
+            let i = 0, len = this.length; for(; i < len; i++) {
                 if (this[i] instanceof Array && array[i] instanceof Array) {
                     if (!this[i].equals(array[i])) {
                         return false;
@@ -152,6 +156,14 @@ Math.randomInt = function (max) {
     return Math.floor(max * Math.random());
 };
 
+Math.clamp = function (x, min, max) {
+    return Math.max(min, Math.min(max, x));
+};
+
+Math.smoothStep = function(x) {
+    return x * (3 - 2 * x);
+};
+
 //-----------------------------------------------------------------------------
 /**
  * Generate random data
@@ -185,112 +197,268 @@ class Random {
     };
 
     static property(obj) {
-        var keys = Object.keys(obj);
+        let keys = Object.keys(obj);
         return obj[keys[this.intRange(0, keys.length - 1)]];
     }
 }
 
-Math.clamp = function (x, min, max) {
-    return Math.max(min, Math.min(max, x));
-};
+//-----------------------------------------------------------------------------
+/**
+ * The base class for a 2D vector.
+ *
+ * @class Vector2
+ */
+class Vector2 {
+    constructor(x, y) {
+        this.x = x || 0;
+        this.y = y || 0;
+    }
+
+    set(x, y) {
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+
+    negative() {
+        this.x *= -1;
+        this.y *= -1;
+        return this;
+    };
+
+    toAngles() {
+        return -Math.atan2(-this.y, this.x);
+    };
+
+    angleTo(a) {
+        return Math.acos(this.dot(a) / (this.length() * a.length()));
+    };
+
+    add(v) {
+        if (v instanceof Vector) {
+            this.x += v.x;
+            this.y += v.y;
+        } else {
+            this.x += v;
+            this.y += v;
+        }
+        return this;
+    };
+
+    subtract(v) {
+        if (v instanceof Vector) {
+            this.x -= v.x;
+            this.y -= v.y;
+        } else {
+            this.x -= v;
+            this.y -= v;
+        }
+        return this;
+    };
+
+    multiply(v) {
+        if (v instanceof Vector) {
+            this.x *= v.x;
+            this.y *= v.y;
+        } else {
+            this.x *= v;
+            this.y *= v;
+        }
+        return this;
+    };
+
+    divide(v) {
+        if (v instanceof Vector) {
+            if (v.x !== 0) this.x /= v.x;
+            if (v.y !== 0) this.y /= v.y;
+        } else {
+            if (v !== 0) {
+                this.x /= v;
+                this.y /= v;
+            }
+        }
+        return this;
+    };
+
+    equals(v) {
+        return this.x === v.x && this.y === v.y;
+    };
+
+    dot(v) {
+        return this.x * v.x + this.y * v.y;
+    };
+
+    cross(v) {
+        return this.x * v.y - this.y * v.x
+    };
+
+    length() {
+        return Math.sqrt(this.dot(this));
+    };
+
+    normalize() {
+        return this.divide(this.length());
+    };
+
+    min() {
+        return Math.min(this.x, this.y);
+    };
+
+    max() {
+        return Math.max(this.x, this.y);
+    };
+
+    setAngle(angle) {
+        let length = this.length();
+        this.x = Math.cos(angle) * length;
+        this.y = Math.sin(angle) * length;
+    };
+
+// Utilities
+    clone() {
+        return new Vector(this.x, this.y);
+    };
+
+    toString() {
+        return 'x: ' + this.x + ', y: ' + this.y;
+    };
+
+    toObject() {
+        return {x: this.x, y: this.y};
+    };
+
+    toArray(n) {
+        return [this.x, this.y].slice(0, n || 2);
+    };
+
+    //==============================================================================================
+    //Static methods
+
+    static negative(v) {
+        return new Vector(-v.x, -v.y);
+    };
+
+    static add(a, b) {
+        if (b instanceof Vector) return new Vector(a.x + b.x, a.y + b.y);
+        else return new Vector(a.x + b, a.y + b);
+    };
+
+    static subtract(a, b) {
+        if (b instanceof Vector) return new Vector(a.x - b.x, a.y - b.y);
+        else return new Vector(a.x - b, a.y - b);
+    };
+
+    static multiply(a, b) {
+        if (b instanceof Vector) return new Vector(a.x * b.x, a.y * b.y);
+        else return new Vector(a.x * b, a.y * b);
+    };
+
+    static divide(a, b) {
+        if (b instanceof Vector) return new Vector(a.x / b.x, a.y / b.y);
+        else return new Vector(a.x / b, a.y / b);
+    };
+
+    static equals(a, b) {
+        return a.x === b.x && a.y === b.y;
+    };
+
+    static dot(a, b) {
+        return a.x * b.x + a.y * b.y;
+    };
+
+    static cross(a, b) {
+        return a.x * b.y - a.y * b.x;
+    };
+}
 
 //-----------------------------------------------------------------------------
-/**++
- * The static class that handles math functions which Math object couldn't.
+/**
+ * The static class that handles RGB conversion and blending modes.
  *
+ * @static
  * @class ColorHelper
  */
-class ColorHelper {
-    constructor() {
-        throw new Error('This is a static class');
+class Color {
+    constructor(r, g, b, a) {
+        this.r = (r || 0) | 0 ;
+        this.g = (g || 0) | 0;
+        this.b = (b || 0) | 0;
+        this.a = a || 1;
+    }
+
+    toHex() {
+        return Color.RGBToHex(this.r, this.g, this.b);
+    }
+
+    set(r, g, b, a) {
+        if (typeof r === 'object') {
+            this.r = r[0];
+            this.g = r[1];
+            this.b = r[2];
+        } else {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.a = a;
+        }
+    }
+
+    static lerp(a, b, duration) {
+        let t = duration.clamp(0, 1);
+        return new Color(
+            a.r + (b.r - a.r) * t,
+            a.g + (b.g - a.g) * t,
+            a.b + (b.b - a.b) * t,
+            a.a + (b.a - a.a) * t
+        );
     }
 
     static brightness(color, speed) {
-        var r = parseInt(color.substr(0, 2), 16);
-        var g = parseInt(color.substr(2, 2), 16);
-        var b = parseInt(color.substr(4, 2), 16);
-
-        r += speed;
-        r = limit(r, 0, 255);
-
-        g += speed;
-        g = limit(g, 0, 255);
-
-        b += speed;
-        b = limit(b, 0, 255);
-
-        return parseInt((0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1))
     }
+
+    static RGBToBinString(r, g, b) {
+        let bin = r << 16 | g << 8 | b;
+        return (function (h) {
+            return new Array(25 - h.length).join("0") + h
+        })(bin.toString(2))
+    }
+
+// convert 0..255 R,G,B values to a hexidecimal color string
+    static RGBToHex(r, g, b) {
+        return r << 16 | g << 8 | b;
+    }
+
+    static RGBToHexString(r, g, b) {
+        let bin = this.RGBToHex(r, g, b);
+        return (function (h) {
+            return new Array(7 - h.length).join("0") + h
+        })(bin.toString(16).toUpperCase())
+    }
+
+// convert a 24 bit binary color to 0..255 R,G,B
+    static binToRGB(bin) {
+        let pbin = parseInt(bin, 2);
+        let r = pbin >> 16;
+        let g = pbin >> 8 & 0xFF;
+        let b = pbin & 0xFF;
+        return [r, g, b];
+    }
+
+// convert a hexidecimal color string to 0..255 R,G,B
+    static hexToRGB(hex) {
+        let r = hex >> 16;
+        let g = hex >> 8 & 0xFF;
+        let b = hex & 0xFF;
+        return [r, g, b];
+    }
+
+    static RGBToCSS(r, g, b) {
+        r = Math.round(r);
+        g = Math.round(g);
+        b = Math.round(b);
+        return 'rgb(' + r + ',' + g + ',' + b + ')';
+    };
 }
-
-//-----------------------------------------------------------------------------
-/**++
- * The static class that handles math functions which Math object couldn't.
- *
- * @class ColorHelper
- */
-class Physics {
-    constructor() {
-        throw new Error('This is a static class');
-    }
-
-    static checkCollision() {
-        var hit, combinedHalfWidths, combinedHalfHeights, dx, dy;
-
-        hit = false;
-
-        r1.centerX = r1.x + r1.width / 2;
-        r1.centerY = r1.y + r1.height / 2;
-        r2.centerX = r2.x + r2.width / 2;
-        r2.centerY = r2.y + r2.height / 2;
-
-        dx = r1.centerX - r2.centerX;
-        dy = r1.centerY - r2.centerY;
-
-        combinedHalfWidths = (r1.width + r2.width)/2;
-        combinedHalfHeights = (r1.height + r2.height)/2;
-
-        if (Math.abs(dx) < combinedHalfWidths && Math.abs(dy) < combinedHalfHeights) {
-            hit = true;
-        } else {
-            hit = false;
-        }
-        return hit;
-    }
-
-    static contain(sprite, container) {
-
-        let collision = undefined;
-
-        //Left
-        if (sprite.x < container.x) {
-            sprite.x = container.x;
-            collision = "left";
-        }
-
-        //Top
-        if (sprite.y < container.y) {
-            sprite.y = container.y;
-            collision = "top";
-        }
-
-        //Right
-        if (sprite.x + sprite.width > container.width) {
-            sprite.x = container.width - sprite.width;
-            collision = "right";
-        }
-
-        //Bottom
-        if (sprite.y + sprite.height > container.height) {
-            sprite.y = container.height - sprite.height;
-            collision = "bottom";
-        }
-
-        //Return the `collision` value
-        return collision;
-    }
-}
-
 
 //-----------------------------------------------------------------------------
 /**
@@ -334,7 +502,7 @@ class Utils {
      * @return {Boolean} True if the platform is a mobile device
      */
     static isMobileDevice() {
-        var r = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+        let r = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
         return !!navigator.userAgent.match(r);
     };
 
@@ -346,7 +514,7 @@ class Utils {
      * @return {Boolean} True if the browser is Mobile Safari
      */
     static isMobileSafari() {
-        var agent = navigator.userAgent;
+        let agent = navigator.userAgent;
         return !!(agent.match(/iPhone|iPad|iPod/) && agent.match(/AppleWebKit/) &&
             !agent.match('CriOS'));
     };
@@ -359,7 +527,7 @@ class Utils {
      * @return {Boolean} True if the browser is Android Chrome
      */
     static isAndroidChrome() {
-        var agent = navigator.userAgent;
+        let agent = navigator.userAgent;
         return !!(agent.match(/Android/) && agent.match(/Chrome/));
     };
 
@@ -371,9 +539,9 @@ class Utils {
      * @return {Boolean} True if the browser can read files in the game folder
      */
     static canReadGameFiles() {
-        var scripts = document.getElementsByTagName('script');
-        var lastScript = scripts[scripts.length - 1];
-        var xhr = new XMLHttpRequest();
+        let scripts = document.getElementsByTagName('script');
+        let lastScript = scripts[scripts.length - 1];
+        let xhr = new XMLHttpRequest();
         try {
             xhr.open('GET', lastScript.src);
             xhr.overrideMimeType('text/javascript');
@@ -383,24 +551,6 @@ class Utils {
             return false;
         }
     };
-
-    /**
-     * Makes a CSS color string from RGB values.
-     *
-     * @static
-     * @method rgbToCssColor
-     * @param {Number} r The red value in the range (0, 255)
-     * @param {Number} g The green value in the range (0, 255)
-     * @param {Number} b The blue value in the range (0, 255)
-     * @return {String} CSS color string
-     */
-    static rgbToCssColor(r, g, b) {
-        r = Math.round(r);
-        g = Math.round(g);
-        b = Math.round(b);
-        return 'rgb(' + r + ',' + g + ',' + b + ')';
-    };
-
 
     static generateRuntimeId() {
         return Utils._id++;
@@ -419,8 +569,8 @@ class Utils {
         }
         // test support passive event
         // https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md#feature-detection
-        var passive = false;
-        var options = Object.defineProperty({}, "passive", {
+        let passive = false;
+        let options = Object.defineProperty({}, "passive", {
             get: function () {
                 passive = true;
             }
@@ -514,7 +664,7 @@ class CacheEntry {
     };
 
     isStillAlive() {
-        var cache = this.cache;
+        let cache = this.cache;
         return ((this.ttlTicks == 0) || (this.touchTicks + this.ttlTicks < cache.updateTicks )) &&
             ((this.ttlSeconds == 0) || (this.touchSeconds + this.ttlSeconds < cache.updateSeconds ));
     };
@@ -524,7 +674,7 @@ class CacheEntry {
      * if resource was already freed by TTL, put it in cache again
      */
     touch() {
-        var cache = this.cache;
+        let cache = this.cache;
         if (this.cached) {
             this.touchTicks = cache.updateTicks;
             this.touchSeconds = cache.updateSeconds;
@@ -557,19 +707,19 @@ class CacheMap {
      * checks ttl of all elements and removes dead ones
      */
     checkTTL() {
-        var cache = this._inner;
-        var temp = this._lastRemovedEntries;
+        let cache = this._inner;
+        let temp = this._lastRemovedEntries;
         if (!temp) {
             temp = [];
             this._lastRemovedEntries = temp;
         }
-        for (var key in cache) {
-            var entry = cache[key];
+        for (let key in cache) {
+            let entry = cache[key];
             if (!entry.isStillAlive()) {
                 temp.push(entry);
             }
         }
-        for (var i = 0; i < temp.length; i++) {
+        let i = 0, len = temp.length; for (; i < len; i++) {
             temp[i].free(true);
         }
         temp.length = 0;
@@ -581,7 +731,7 @@ class CacheMap {
      * @returns {*|null}
      */
     getItem(key) {
-        var entry = this._inner[key];
+        let entry = this._inner[key];
         if (entry) {
             return entry.item;
         }
@@ -589,8 +739,8 @@ class CacheMap {
     };
 
     clear() {
-        var keys = Object.keys(this._inner);
-        for (var i = 0; i < keys.length; i++) {
+        let keys = Object.keys(this._inner);
+        let i = 0, len = keys.length; for(; i < len; i++) {
             this._inner[keys[i]].free();
         }
     };
@@ -626,7 +776,7 @@ class ImageCache {
 
     get(key) {
         if (this._items[key]) {
-            var item = this._items[key];
+            let item = this._items[key];
             item.touch = Date.now();
             return item.bitmap;
         }
@@ -647,7 +797,7 @@ class ImageCache {
     };
 
     releaseReservation(reservationId) {
-        var items = this._items;
+        let items = this._items;
 
         Object.keys(items)
             .map(function (key) {
@@ -661,8 +811,8 @@ class ImageCache {
     };
 
     _truncateCache() {
-        var items = this._items;
-        var sizeLeft = ImageCache.limit;
+        let items = this._items;
+        let sizeLeft = ImageCache.limit;
 
         Object.keys(items).map(function (key) {
             return items[key];
@@ -670,7 +820,7 @@ class ImageCache {
             return b.touch - a.touch;
         }).forEach(function (item) {
             if (sizeLeft > 0 || this._mustBeHeld(item)) {
-                var bitmap = item.bitmap;
+                let bitmap = item.bitmap;
                 sizeLeft -= bitmap.width * bitmap.height;
             } else {
                 delete items[item.key];
@@ -690,15 +840,15 @@ class ImageCache {
     };
 
     isReady() {
-        var items = this._items;
+        let items = this._items;
         return !Object.keys(items).some(function (key) {
             return !items[key].bitmap.isRequestOnly() && !items[key].bitmap.isReady();
         });
     };
 
     getErrorBitmap() {
-        var items = this._items;
-        var bitmap = null;
+        let items = this._items;
+        let bitmap = null;
         if (Object.keys(items).some(function (key) {
                 if (items[key].bitmap.isError()) {
                     bitmap = items[key].bitmap;
@@ -730,7 +880,7 @@ class RequestQueue {
     update() {
         if (this._queue.length === 0) return;
 
-        var top = this._queue[0];
+        let top = this._queue[0];
         if (top.value.isRequestReady()) {
             this._queue.shift();
             if (this._queue.length !== 0) {
@@ -742,8 +892,8 @@ class RequestQueue {
     };
 
     raisePriority(key) {
-        for (var n = 0; n < this._queue.length; n++) {
-            var item = this._queue[n];
+        let n = 0, len = this._queue.length; for(; n < len; n++) {
+            let item = this._queue[n];
             if (item.key === key) {
                 this._queue.splice(n, 1);
                 this._queue.unshift(item);
@@ -757,7 +907,6 @@ class RequestQueue {
     };
 
 }
-
 
 //-----------------------------------------------------------------------------
 /**
@@ -773,20 +922,6 @@ class Point extends PIXI.Point {
         super(x, y);
     }
 }
-
-/**
- * The x coordinate.
- *
- * @property x
- * @type Number
- */
-
-/**
- * The y coordinate.
- *
- * @property y
- * @type Number
- */
 
 //-----------------------------------------------------------------------------
 /**
@@ -813,34 +948,6 @@ class Rectangle extends PIXI.Rectangle {
  * @private
  */
 Rectangle.emptyRectangle = new Rectangle(0, 0, 0, 0);
-
-/**
- * The x coordinate for the upper-left corner.
- *
- * @property x
- * @type Number
- */
-
-/**
- * The y coordinate for the upper-left corner.
- *
- * @property y
- * @type Number
- */
-
-/**
- * The width of the rectangle.
- *
- * @property width
- * @type Number
- */
-
-/**
- * The height of the rectangle.
- *
- * @property height
- * @type Number
- */
 
 //-----------------------------------------------------------------------------
 /**
@@ -932,8 +1039,8 @@ class Bitmap {
         this.__canvas.height = Math.max(height || 0, 1);
 
         if (this._image) {
-            var w = Math.max(this._image.width || 0, 1);
-            var h = Math.max(this._image.height || 0, 1);
+            let w = Math.max(this._image.width || 0, 1);
+            let h = Math.max(this._image.height || 0, 1);
             this.__canvas.width = w;
             this.__canvas.height = h;
             this._createBaseTexture(this._canvas);
@@ -969,7 +1076,7 @@ class Bitmap {
     };
 
     _renewCanvas() {
-        var newImage = this._image;
+        let newImage = this._image;
         if (newImage && this.__canvas && (this.__canvas.width < newImage.width || this.__canvas.height < newImage.height)) {
             this._createCanvas();
         }
@@ -984,7 +1091,7 @@ class Bitmap {
      * @return Bitmap
      */
     static load(url) {
-        var bitmap = Object.create(Bitmap.prototype);
+        let bitmap = Object.create(Bitmap.prototype);
         bitmap._defer = true;
         bitmap.initialize();
 
@@ -1003,15 +1110,15 @@ class Bitmap {
      * @return Bitmap
      */
     static snap(stage) {
-        var width = Graphics.width;
-        var height = Graphics.height;
-        var bitmap = new Bitmap(width, height);
-        var context = bitmap._context;
-        var renderTexture = PIXI.RenderTexture.create(width, height);
+        let width = Graphics.width;
+        let height = Graphics.height;
+        let bitmap = new Bitmap(width, height);
+        let context = bitmap._context;
+        let renderTexture = PIXI.RenderTexture.create(width, height);
         if (stage) {
             Graphics._renderer.render(stage, renderTexture);
             stage.worldTransform.identity();
-            var canvas = null;
+            let canvas = null;
             if (Graphics.isWebGL()) {
                 canvas = Graphics._renderer.extract.canvas(renderTexture);
             } else {
@@ -1092,7 +1199,7 @@ class Bitmap {
         if (sx >= 0 && sy >= 0 && sw > 0 && sh > 0 && dw > 0 && dh > 0 &&
             sx + sw <= source.width && sy + sh <= source.height) {
             this._context.globalCompositeOperation = 'source-over';
-            this._context.drawImage(source._canvas, sx, sy, sw, sh, dx, dy, dw, dh);
+            this._context.drawImage(source._image || source._canvas, sx, sy, sw, sh, dx, dy, dw, dh);
             this._setDirty();
         }
     };
@@ -1131,11 +1238,9 @@ class Bitmap {
      * @return {String} The pixel color (hex format)
      */
     getPixel(x, y) {
-        var data = this._context.getImageData(x, y, 1, 1).data;
-        var result = '#';
-        for (var i = 0; i < 3; i++) {
-            result += data[i].toString(16).padZero(2);
-        }
+        let data = this._context.getImageData(x, y, 1, 1).data;
+        let result = '#';
+        result += Color.RGBToHexString(data[0], data[1], data[2]);
         return result;
     };
 
@@ -1148,7 +1253,7 @@ class Bitmap {
      * @return {String} The alpha value
      */
     getAlphaPixel(x, y) {
-        var data = this._context.getImageData(x, y, 1, 1).data;
+        let data = this._context.getImageData(x, y, 1, 1).data;
         return data[3];
     };
 
@@ -1186,7 +1291,7 @@ class Bitmap {
      * @param {String} color The color of the rectangle in CSS format
      */
     fillRect(x, y, width, height, color) {
-        var context = this._context;
+        let context = this._context;
         context.save();
         context.fillStyle = color;
         context.fillRect(x, y, width, height);
@@ -1218,8 +1323,8 @@ class Bitmap {
      */
     gradientFillRect(x, y, width, height, color1,
                      color2, vertical) {
-        var context = this._context;
-        var grad;
+        let context = this._context;
+        let grad;
         if (vertical) {
             grad = context.createLinearGradient(x, y, x, y + height);
         } else {
@@ -1244,7 +1349,7 @@ class Bitmap {
      * @param {String} color The color of the circle in CSS format
      */
     drawCircle(x, y, radius, color) {
-        var context = this._context;
+        let context = this._context;
         context.save();
         context.fillStyle = color;
         context.beginPath();
@@ -1269,10 +1374,10 @@ class Bitmap {
         // Note: Firefox has a bug with textBaseline: Bug 737852
         //       So we use 'alphabetic' here.
         if (text !== undefined) {
-            var tx = x;
-            var ty = y + lineHeight - (lineHeight - this.fontSize * 0.7) / 2;
-            var context = this._context;
-            var alpha = context.globalAlpha;
+            let tx = x;
+            let ty = y + lineHeight - (lineHeight - this.fontSize * 0.7) / 2;
+            let context = this._context;
+            let alpha = context.globalAlpha;
             maxWidth = maxWidth || 0xffffffff;
             if (align === 'center') {
                 tx += maxWidth / 2;
@@ -1301,10 +1406,10 @@ class Bitmap {
      * @return {Number} The width of the text in pixels
      */
     measureTextWidth(text) {
-        var context = this._context;
+        let context = this._context;
         context.save();
         context.font = this._makeFontNameText();
-        var width = context.measureText(text).width;
+        let width = context.measureText(text).width;
         context.restore();
         return width;
     };
@@ -1319,10 +1424,10 @@ class Bitmap {
      */
     adjustTone(r, g, b) {
         if ((r || g || b) && this.width > 0 && this.height > 0) {
-            var context = this._context;
-            var imageData = context.getImageData(0, 0, this.width, this.height);
-            var pixels = imageData.data;
-            for (var i = 0; i < pixels.length; i += 4) {
+            let context = this._context;
+            let imageData = context.getImageData(0, 0, this.width, this.height);
+            let pixels = imageData.data;
+            let i = 0, len = pixels.length; for(; i < len; i += 4) {
                 pixels[i] += r;
                 pixels[i + 1] += g;
                 pixels[i + 2] += b;
@@ -1340,12 +1445,12 @@ class Bitmap {
      */
     rotateHue(offset) {
         function rgbToHsl(r, g, b) {
-            var cmin = Math.min(r, g, b);
-            var cmax = Math.max(r, g, b);
-            var h = 0;
-            var s = 0;
-            var l = (cmin + cmax) / 2;
-            var delta = cmax - cmin;
+            let cmin = Math.min(r, g, b);
+            let cmax = Math.max(r, g, b);
+            let h = 0;
+            let s = 0;
+            let l = (cmin + cmax) / 2;
+            let delta = cmax - cmin;
 
             if (delta > 0) {
                 if (r === cmax) {
@@ -1361,11 +1466,11 @@ class Bitmap {
         }
 
         function hslToRgb(h, s, l) {
-            var c = (255 - Math.abs(2 * l - 255)) * s;
-            var x = c * (1 - Math.abs((h / 60) % 2 - 1));
-            var m = l - c / 2;
-            var cm = c + m;
-            var xm = x + m;
+            let c = (255 - Math.abs(2 * l - 255)) * s;
+            let x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            let m = l - c / 2;
+            let cm = c + m;
+            let xm = x + m;
 
             if (h < 60) {
                 return [cm, xm, m];
@@ -1384,15 +1489,15 @@ class Bitmap {
 
         if (offset && this.width > 0 && this.height > 0) {
             offset = ((offset % 360) + 360) % 360;
-            var context = this._context;
-            var imageData = context.getImageData(0, 0, this.width, this.height);
-            var pixels = imageData.data;
-            for (var i = 0; i < pixels.length; i += 4) {
-                var hsl = rgbToHsl(pixels[i], pixels[i + 1], pixels[i + 2]);
-                var h = (hsl[0] + offset) % 360;
-                var s = hsl[1];
-                var l = hsl[2];
-                var rgb = hslToRgb(h, s, l);
+            let context = this._context;
+            let imageData = context.getImageData(0, 0, this.width, this.height);
+            let pixels = imageData.data;
+            let i = 0, len = pixels.length; for(; i < len; i += 4) {
+                let hsl = rgbToHsl(pixels[i], pixels[i + 1], pixels[i + 2]);
+                let h = (hsl[0] + offset) % 360;
+                let s = hsl[1];
+                let l = hsl[2];
+                let rgb = hslToRgb(h, s, l);
                 pixels[i] = rgb[0];
                 pixels[i + 1] = rgb[1];
                 pixels[i + 2] = rgb[2];
@@ -1408,13 +1513,13 @@ class Bitmap {
      * @method blur
      */
     blur() {
-        for (var i = 0; i < 2; i++) {
-            var w = this.width;
-            var h = this.height;
-            var canvas = this._canvas;
-            var context = this._context;
-            var tempCanvas = document.createElement('canvas');
-            var tempContext = tempCanvas.getContext('2d');
+        let i = 0; for(; i < 2; i++) {
+            let w = this.width;
+            let h = this.height;
+            let canvas = this._canvas;
+            let context = this._context;
+            let tempCanvas = document.createElement('canvas');
+            let tempContext = tempCanvas.getContext('2d');
             tempCanvas.width = w + 2;
             tempCanvas.height = h + 2;
             tempContext.drawImage(canvas, 0, 0, w, h, 1, 1, w, h);
@@ -1427,8 +1532,8 @@ class Bitmap {
             context.fillRect(0, 0, w, h);
             context.globalCompositeOperation = 'lighter';
             context.globalAlpha = 1 / 9;
-            for (var y = 0; y < 3; y++) {
-                for (var x = 0; x < 3; x++) {
+            let y = 0; for(; y < 3; y++) {
+                let x = 0; for (; x < 3; x++) {
                     context.drawImage(tempCanvas, x, y, w, h, 0, 0, w, h);
                 }
             }
@@ -1469,7 +1574,7 @@ class Bitmap {
      * @private
      */
     _drawTextOutline(text, tx, ty, maxWidth) {
-        var context = this._context;
+        let context = this._context;
         context.strokeStyle = this.outlineColor;
         context.lineWidth = this.outlineWidth;
         context.lineJoin = 'round';
@@ -1485,7 +1590,7 @@ class Bitmap {
      * @private
      */
     _drawTextBody(text, tx, ty, maxWidth) {
-        var context = this._context;
+        let context = this._context;
         context.fillStyle = this.textColor;
         context.fillText(text, tx, ty, maxWidth);
     };
@@ -1560,7 +1665,7 @@ class Bitmap {
      */
     _callLoadListeners() {
         while (this._loadListeners.length > 0) {
-            var listener = this._loadListeners.shift();
+            let listener = this._loadListeners.shift();
             listener(this);
         }
     };
@@ -1595,7 +1700,7 @@ class Bitmap {
     };
 
     static request(url) {
-        var bitmap = Object.create(Bitmap.prototype);
+        let bitmap = Object.create(Bitmap.prototype);
         bitmap._defer = true;
         bitmap.initialize();
 
@@ -1917,7 +2022,6 @@ class Graphics {
         this._setupCssFontLoading();
     };
 
-
     static _setupCssFontLoading() {
         if (Graphics._cssFontLoading) {
             document.fonts.ready.then(function (fonts) {
@@ -1965,15 +2069,15 @@ class Graphics {
      */
     static render(stage) {
         if (this._skipCount === 0) {
-            var startTime = Date.now();
+            let startTime = Date.now();
             if (stage) {
                 this._renderer.render(stage);
                 if (this._renderer.gl && this._renderer.gl.flush) {
                     this._renderer.gl.flush();
                 }
             }
-            var endTime = Date.now();
-            var elapsed = endTime - startTime;
+            let endTime = Date.now();
+            let elapsed = endTime - startTime;
             this._skipCount = Math.min(Math.floor(elapsed / 15), this._maxSkip);
             this._rendered = true;
         } else {
@@ -2003,7 +2107,7 @@ class Graphics {
      */
     static hasWebGL() {
         try {
-            var canvas = document.createElement('canvas');
+            let canvas = document.createElement('canvas');
             return !!(canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
         } catch (e) {
             return false;
@@ -2086,7 +2190,7 @@ class Graphics {
     static printLoadingError(url) {
         if (this._errorPrinter && !this._errorShowed) {
             this._errorPrinter.innerHTML = this._makeErrorHtml('Loading Error', 'Failed to load: ' + url);
-            var button = document.createElement('button');
+            let button = document.createElement('button');
             button.innerHTML = 'Retry';
             button.style.fontSize = '24px';
             button.style.color = '#ffffff';
@@ -2165,9 +2269,9 @@ class Graphics {
      * @param {String} url The url of the font file
      */
     static loadFont(name, url) {
-        var style = document.createElement('style');
-        var head = document.getElementsByTagName('head');
-        var rule = '@font-face { font-family: "' + name + '"; src: url("' + url + '"); }';
+        let style = document.createElement('style');
+        let head = document.getElementsByTagName('head');
+        let rule = '@font-face { font-family: "' + name + '"; src: url("' + url + '"); }';
         style.type = 'text/css';
         head.item(0).appendChild(style);
         style.sheet.insertRule(rule, 0);
@@ -2193,9 +2297,9 @@ class Graphics {
             if (!this._hiddenCanvas) {
                 this._hiddenCanvas = document.createElement('canvas');
             }
-            var context = this._hiddenCanvas.getContext('2d');
-            var text = 'abcdefghijklmnopqrstuvwxyz';
-            var width1, width2;
+            let context = this._hiddenCanvas.getContext('2d');
+            let text = 'abcdefghijklmnopqrstuvwxyz';
+            let width1, width2;
             context.font = '40px ' + name + ', sans-serif';
             width1 = context.measureText(text).width;
             context.font = '40px sans-serif';
@@ -2279,7 +2383,7 @@ class Graphics {
      */
     static pageToCanvasX(x) {
         if (this._canvas) {
-            var left = this._canvas.offsetLeft;
+            let left = this._canvas.offsetLeft;
             return Math.round((x - left) / this._realScale);
         } else {
             return 0;
@@ -2297,7 +2401,7 @@ class Graphics {
      */
     static pageToCanvasY(y) {
         if (this._canvas) {
-            var top = this._canvas.offsetTop;
+            let top = this._canvas.offsetTop;
             return Math.round((y - top) / this._realScale);
         } else {
             return 0;
@@ -2364,8 +2468,8 @@ class Graphics {
      */
     static _updateRealScale() {
         if (this._stretchEnabled) {
-            var h = window.innerWidth / this._width;
-            var v = window.innerHeight / this._height;
+            let h = window.innerWidth / this._width;
+            let v = window.innerHeight / this._height;
             this._realScale = Math.min(h, v);
         } else {
             this._realScale = this._scale;
@@ -2400,7 +2504,7 @@ class Graphics {
      * @private
      */
     static _testCanvasBlendModes() {
-        var canvas, context, imageData1, imageData2;
+        let canvas, context, imageData1, imageData2;
         canvas = document.createElement('canvas');
         canvas.width = 1;
         canvas.height = 1;
@@ -2429,8 +2533,8 @@ class Graphics {
      * @private
      */
     static _modifyExistingElements() {
-        var elements = document.getElementsByTagName('*');
-        for (var i = 0; i < elements.length; i++) {
+        let elements = document.getElementsByTagName('*');
+        let i = 0, len = elements.length; for(; i < len; i++) {
             if (elements[i].style.zIndex > 0) {
                 elements[i].style.zIndex = 0;
             }
@@ -2546,7 +2650,7 @@ class Graphics {
      * @private
      */
     static _clearUpperCanvas() {
-        var context = this._upperCanvas.getContext('2d');
+        let context = this._upperCanvas.getContext('2d');
         context.clearRect(0, 0, this._width, this._height);
     };
 
@@ -2558,10 +2662,10 @@ class Graphics {
     static _paintUpperCanvas() {
         this._clearUpperCanvas();
         if (this._loadingImage && this._loadingCount >= 20) {
-            var context = this._upperCanvas.getContext('2d');
-            var dx = (this._width - this._loadingImage.width) / 2;
-            var dy = (this._height - this._loadingImage.height) / 2;
-            var alpha = ((this._loadingCount - 20) / 30).clamp(0, 1);
+            let context = this._upperCanvas.getContext('2d');
+            let dx = (this._width - this._loadingImage.width) / 2;
+            let dy = (this._height - this._loadingImage.height) / 2;
+            let alpha = ((this._loadingCount - 20) / 30).clamp(0, 1);
             context.save();
             context.globalAlpha = alpha;
             context.drawImage(this._loadingImage, dx, dy);
@@ -2576,9 +2680,9 @@ class Graphics {
      */
     static _createRenderer() {
         PIXI.dontSayHello = true;
-        var width = this._width;
-        var height = this._height;
-        var options = {view: this._canvas};
+        let width = this._width;
+        let height = this._height;
+        let options = {view: this._canvas};
         try {
             switch (this._rendererType) {
                 case 'canvas':
@@ -2617,7 +2721,7 @@ class Graphics {
      * @private
      */
     static _createFPSMeter() {
-        var options = {graph: 1, decimals: 0, theme: 'transparent', toggleOn: null};
+        let options = {graph: 1, decimals: 0, theme: 'transparent', toggleOn: null};
         this._fpsMeter = new FPSMeter(options);
         this._fpsMeter.hide();
     };
@@ -2628,7 +2732,7 @@ class Graphics {
      * @private
      */
     static _createModeBox() {
-        var box = document.createElement('div');
+        let box = document.createElement('div');
         box.id = 'modeTextBack';
         box.style.position = 'absolute';
         box.style.left = '5px';
@@ -2639,7 +2743,7 @@ class Graphics {
         box.style.zIndex = 9;
         box.style.opacity = 0;
 
-        var text = document.createElement('div');
+        let text = document.createElement('div');
         text.id = 'modeText';
         text.style.position = 'absolute';
         text.style.left = '0px';
@@ -2674,8 +2778,8 @@ class Graphics {
      * @private
      */
     static _createFontLoader(name) {
-        var div = document.createElement('div');
-        var text = document.createTextNode('.');
+        let div = document.createElement('div');
+        let text = document.createTextNode('.');
         div.style.fontFamily = name;
         div.style.fontSize = '0px';
         div.style.color = 'transparent';
@@ -2696,8 +2800,8 @@ class Graphics {
      * @private
      */
     static _centerElement(element) {
-        var width = element.width * this._realScale;
-        var height = element.height * this._realScale;
+        let width = element.width * this._realScale;
+        let height = element.height * this._realScale;
         element.style.position = 'absolute';
         element.style.margin = 'auto';
         element.style.top = 0;
@@ -2714,7 +2818,7 @@ class Graphics {
      * @private
      */
     static _disableTextSelection() {
-        var body = document.body;
+        let body = document.body;
         body.style.userSelect = 'none';
         body.style.webkitUserSelect = 'none';
         body.style.msUserSelect = 'none';
@@ -2727,11 +2831,11 @@ class Graphics {
      * @private
      */
     static _disableContextMenu() {
-        var elements = document.body.getElementsByTagName('*');
-        var oncontextmenu = function () {
+        let elements = document.body.getElementsByTagName('*');
+        let oncontextmenu = function () {
             return false;
         };
-        for (var i = 0; i < elements.length; i++) {
+        let i = 0, len = elements.length; for(; i < len; i++) {
             elements[i].oncontextmenu = oncontextmenu;
         }
     };
@@ -2929,7 +3033,7 @@ class Graphics {
      * @private
      */
     static _requestFullScreen() {
-        var element = document.body;
+        let element = document.body;
         if (element.requestFullScreen) {
             element.requestFullScreen();
         } else if (element.mozRequestFullScreen) {
@@ -3161,7 +3265,7 @@ class Input {
         } else {
             this._latestButton = null;
         }
-        for (var name in this._currentState) {
+        for (let name in this._currentState) {
             if (this._currentState[name] && !this._previousState[name]) {
                 this._latestButton = name;
                 this._pressedTime = 0;
@@ -3247,9 +3351,9 @@ class Input {
      */
     static _wrapNwjsAlert() {
         if (Utils.isNwjs()) {
-            var _alert = window.alert;
-            window.alert = function() {
-                var win = nw.Window.get();
+            let _alert = window.alert;
+            window.alert = function () {
+                let win = nw.Window.get();
                 _alert.apply(this, arguments);
                 win.focus();
                 Input.clear();
@@ -3281,7 +3385,7 @@ class Input {
         if (event.keyCode === 144) {    // Numlock
             this.clear();
         }
-        var buttonName = this.keyMapper[event.keyCode];
+        let buttonName = this.keyMapper[event.keyCode];
         if (ResourceHandler.exists() && buttonName === 'ok') {
             ResourceHandler.retry();
         } else if (buttonName) {
@@ -3321,7 +3425,7 @@ class Input {
      * @private
      */
     static _onKeyUp(event) {
-        var buttonName = this.keyMapper[event.keyCode];
+        let buttonName = this.keyMapper[event.keyCode];
         if (buttonName) {
             this._currentState[buttonName] = false;
         }
@@ -3346,10 +3450,10 @@ class Input {
      */
     static _pollGamepads() {
         if (navigator.getGamepads) {
-            var gamepads = navigator.getGamepads();
+            let gamepads = navigator.getGamepads();
             if (gamepads) {
-                for (var i = 0; i < gamepads.length; i++) {
-                    var gamepad = gamepads[i];
+                let i = 0, len = gamepads.length; for(; i < len; i++) {
+                    let gamepad = gamepads[i];
                     if (gamepad && gamepad.connected) {
                         this._updateGamepadState(gamepad);
                     }
@@ -3366,16 +3470,16 @@ class Input {
      * @private
      */
     static _updateGamepadState(gamepad) {
-        var lastState = this._gamepadStates[gamepad.index] || [];
-        var newState = [];
-        var buttons = gamepad.buttons;
-        var axes = gamepad.axes;
-        var threshold = 0.5;
+        let lastState = this._gamepadStates[gamepad.index] || [];
+        let newState = [];
+        let buttons = gamepad.buttons;
+        let axes = gamepad.axes;
+        let threshold = 0.5;
         newState[12] = false;
         newState[13] = false;
         newState[14] = false;
         newState[15] = false;
-        for (var i = 0; i < buttons.length; i++) {
+        for (let i = 0; i < buttons.length; i++) {
             newState[i] = buttons[i].pressed;
         }
         if (axes[1] < -threshold) {
@@ -3388,9 +3492,9 @@ class Input {
         } else if (axes[0] > threshold) {
             newState[15] = true;    // right
         }
-        for (var j = 0; j < newState.length; j++) {
+        for (let j = 0; j < newState.length; j++) {
             if (newState[j] !== lastState[j]) {
-                var buttonName = this.gamepadMapper[j];
+                let buttonName = this.gamepadMapper[j];
                 if (buttonName) {
                     this._currentState[buttonName] = newState[j];
                 }
@@ -3405,8 +3509,8 @@ class Input {
      * @private
      */
     static _updateDirection() {
-        var x = this._signX();
-        var y = this._signY();
+        let x = this._signX();
+        let y = this._signY();
 
         this._dir8 = this._makeNumpadDirection(x, y);
 
@@ -3431,7 +3535,7 @@ class Input {
      * @private
      */
     static _signX() {
-        var x = 0;
+        let x = 0;
 
         if (this.isPressed('left')) {
             x--;
@@ -3448,7 +3552,7 @@ class Input {
      * @private
      */
     static _signY() {
-        var y = 0;
+        let y = 0;
 
         if (this.isPressed('up')) {
             y--;
@@ -3768,7 +3872,7 @@ class TouchInput {
      * @private
      */
     static _setupEventHandlers() {
-        var isSupportPassive = Utils.isSupportPassiveEvent();
+        let isSupportPassive = Utils.isSupportPassiveEvent();
         document.addEventListener('mousedown', this._onMouseDown.bind(this));
         document.addEventListener('mousemove', this._onMouseMove.bind(this));
         document.addEventListener('mouseup', this._onMouseUp.bind(this));
@@ -3803,8 +3907,8 @@ class TouchInput {
      * @private
      */
     static _onLeftButtonDown(event) {
-        var x = Graphics.pageToCanvasX(event.pageX);
-        var y = Graphics.pageToCanvasY(event.pageY);
+        let x = Graphics.pageToCanvasX(event.pageX);
+        let y = Graphics.pageToCanvasY(event.pageY);
         if (Graphics.isInsideCanvas(x, y)) {
             this._mousePressed = true;
             this._pressedTime = 0;
@@ -3828,8 +3932,8 @@ class TouchInput {
      * @private
      */
     static _onRightButtonDown(event) {
-        var x = Graphics.pageToCanvasX(event.pageX);
-        var y = Graphics.pageToCanvasY(event.pageY);
+        let x = Graphics.pageToCanvasX(event.pageX);
+        let y = Graphics.pageToCanvasY(event.pageY);
         if (Graphics.isInsideCanvas(x, y)) {
             this._onCancel(x, y);
         }
@@ -3842,11 +3946,9 @@ class TouchInput {
      * @private
      */
     static _onMouseMove(event) {
-        if (this._mousePressed) {
-            var x = Graphics.pageToCanvasX(event.pageX);
-            var y = Graphics.pageToCanvasY(event.pageY);
-            this._onMove(x, y);
-        }
+        let x = Graphics.pageToCanvasX(event.pageX);
+        let y = Graphics.pageToCanvasY(event.pageY);
+        this._onMove(x, y);
     };
 
     /**
@@ -3857,8 +3959,8 @@ class TouchInput {
      */
     static _onMouseUp(event) {
         if (event.button === 0) {
-            var x = Graphics.pageToCanvasX(event.pageX);
-            var y = Graphics.pageToCanvasY(event.pageY);
+            let x = Graphics.pageToCanvasX(event.pageX);
+            let y = Graphics.pageToCanvasY(event.pageY);
             this._mousePressed = false;
             this._onRelease(x, y);
         }
@@ -3883,10 +3985,10 @@ class TouchInput {
      * @private
      */
     static _onTouchStart(event) {
-        for (var i = 0; i < event.changedTouches.length; i++) {
-            var touch = event.changedTouches[i];
-            var x = Graphics.pageToCanvasX(touch.pageX);
-            var y = Graphics.pageToCanvasY(touch.pageY);
+        for (let i = 0; i < event.changedTouches.length; i++) {
+            let touch = event.changedTouches[i];
+            let x = Graphics.pageToCanvasX(touch.pageX);
+            let y = Graphics.pageToCanvasY(touch.pageY);
             if (Graphics.isInsideCanvas(x, y)) {
                 this._screenPressed = true;
                 this._pressedTime = 0;
@@ -3910,10 +4012,10 @@ class TouchInput {
      * @private
      */
     static _onTouchMove(event) {
-        for (var i = 0; i < event.changedTouches.length; i++) {
-            var touch = event.changedTouches[i];
-            var x = Graphics.pageToCanvasX(touch.pageX);
-            var y = Graphics.pageToCanvasY(touch.pageY);
+        for (let i = 0; i < event.changedTouches.length; i++) {
+            let touch = event.changedTouches[i];
+            let x = Graphics.pageToCanvasX(touch.pageX);
+            let y = Graphics.pageToCanvasY(touch.pageY);
             this._onMove(x, y);
         }
     };
@@ -3925,10 +4027,10 @@ class TouchInput {
      * @private
      */
     static _onTouchEnd(event) {
-        for (var i = 0; i < event.changedTouches.length; i++) {
-            var touch = event.changedTouches[i];
-            var x = Graphics.pageToCanvasX(touch.pageX);
-            var y = Graphics.pageToCanvasY(touch.pageY);
+        for (let i = 0; i < event.changedTouches.length; i++) {
+            let touch = event.changedTouches[i];
+            let x = Graphics.pageToCanvasX(touch.pageX);
+            let y = Graphics.pageToCanvasY(touch.pageY);
             this._screenPressed = false;
             this._onRelease(x, y);
         }
@@ -3952,8 +4054,8 @@ class TouchInput {
      */
     static _onPointerDown(event) {
         if (event.pointerType === 'touch' && !event.isPrimary) {
-            var x = Graphics.pageToCanvasX(event.pageX);
-            var y = Graphics.pageToCanvasY(event.pageY);
+            let x = Graphics.pageToCanvasX(event.pageX);
+            let y = Graphics.pageToCanvasY(event.pageY);
             if (Graphics.isInsideCanvas(x, y)) {
                 // For Microsoft Edge
                 this._onCancel(x, y);
@@ -4117,7 +4219,7 @@ Object.defineProperty(TouchInput, 'date', {
 
 class Sprite extends PIXI.Sprite {
     constructor(bitmap) {
-        var texture = new PIXI.Texture(new PIXI.BaseTexture());
+        let texture = new PIXI.Texture(new PIXI.BaseTexture());
         super(texture);
         this._bitmap = null;
         this._frame = new Rectangle();
@@ -4135,7 +4237,6 @@ class Sprite extends PIXI.Sprite {
          */
         this._isPicture = false;
         this.spriteId = Sprite._counter++;
-        this.opaque = false;
         this.bitmap = bitmap;
     }
 
@@ -4153,19 +4254,7 @@ class Sprite extends PIXI.Sprite {
     };
 
     /**
-     * Sets the x and y at once.
-     *
-     * @method move
-     * @param {Number} x The x coordinate of the sprite
-     * @param {Number} y The y coordinate of the sprite
-     */
-    move(x, y) {
-        this.x = x;
-        this.y = y;
-    };
-
-    /**
-     * Sets the rectagle of the bitmap that the sprite displays.
+     * Sets the rectangle of the bitmap that the sprite displays.
      *
      * @method setFrame
      * @param {Number} x The x coordinate of the frame
@@ -4175,7 +4264,7 @@ class Sprite extends PIXI.Sprite {
      */
     setFrame(x, y, width, height) {
         this._refreshFrame = false;
-        var frame = this._frame;
+        let frame = this._frame;
         if (x !== frame.x || y !== frame.y ||
             width !== frame.width || height !== frame.height) {
             frame.x = x;
@@ -4192,7 +4281,7 @@ class Sprite extends PIXI.Sprite {
      * @method getBlendColor
      * @return {Array} The blend color [r, g, b, a]
      */
-    getBlendColor() {
+    get blendColor() {
         return this._blendColor.clone();
     };
 
@@ -4202,7 +4291,7 @@ class Sprite extends PIXI.Sprite {
      * @method setBlendColor
      * @param {Array} color The blend color [r, g, b, a]
      */
-    setBlendColor(color) {
+    set blendColor(color) {
         if (!(color instanceof Array)) {
             throw new Error('Argument must be an array');
         }
@@ -4218,7 +4307,7 @@ class Sprite extends PIXI.Sprite {
      * @method getColorTone
      * @return {Array} The color tone [r, g, b, gray]
      */
-    getColorTone() {
+    get colorTone() {
         return this._colorTone.clone();
     };
 
@@ -4228,7 +4317,7 @@ class Sprite extends PIXI.Sprite {
      * @method setColorTone
      * @param {Array} tone The color tone [r, g, b, gray]
      */
-    setColorTone(tone) {
+    set colorTone(tone) {
         if (!(tone instanceof Array)) {
             throw new Error('Argument must be an array');
         }
@@ -4259,16 +4348,16 @@ class Sprite extends PIXI.Sprite {
      * @private
      */
     _refresh() {
-        var frameX = Math.floor(this._frame.x);
-        var frameY = Math.floor(this._frame.y);
-        var frameW = Math.floor(this._frame.width);
-        var frameH = Math.floor(this._frame.height);
-        var bitmapW = this._bitmap ? this._bitmap.width : 0;
-        var bitmapH = this._bitmap ? this._bitmap.height : 0;
-        var realX = frameX.clamp(0, bitmapW);
-        var realY = frameY.clamp(0, bitmapH);
-        var realW = (frameW - realX + frameX).clamp(0, bitmapW - realX);
-        var realH = (frameH - realY + frameY).clamp(0, bitmapH - realY);
+        let frameX = Math.floor(this._frame.x);
+        let frameY = Math.floor(this._frame.y);
+        let frameW = Math.floor(this._frame.width);
+        let frameH = Math.floor(this._frame.height);
+        let bitmapW = this._bitmap ? this._bitmap.width : 0;
+        let bitmapH = this._bitmap ? this._bitmap.height : 0;
+        let realX = frameX.clamp(0, bitmapW);
+        let realY = frameY.clamp(0, bitmapH);
+        let realW = (frameW - realX + frameX).clamp(0, bitmapW - realX);
+        let realH = (frameH - realY + frameY).clamp(0, bitmapH - realY);
 
         this._realFrame.x = realX;
         this._realFrame.y = realY;
@@ -4301,26 +4390,12 @@ class Sprite extends PIXI.Sprite {
     };
 
     /**
-     * @method _isInBitmapRect
-     * @param {Number} x
-     * @param {Number} y
-     * @param {Number} w
-     * @param {Number} h
-     * @return {Boolean}
-     * @private
-     */
-    _isInBitmapRect(x, y, w, h) {
-        return (this._bitmap && x + w > 0 && y + h > 0 &&
-            x < this._bitmap.width && y < this._bitmap.height);
-    };
-
-    /**
      * @method _needsTint
      * @return {Boolean}
      * @private
      */
     _needsTint() {
-        var tone = this._colorTone;
+        let tone = this._colorTone;
         return tone[0] || tone[1] || tone[2] || tone[3] || this._blendColor[3] > 0;
     };
 
@@ -4357,25 +4432,25 @@ class Sprite extends PIXI.Sprite {
      * @private
      */
     _executeTint(x, y, w, h) {
-        var context = this._context;
-        var tone = this._colorTone;
-        var color = this._blendColor;
+        let context = this._context;
+        let tone = this._colorTone;
+        let color = this._blendColor;
 
         context.globalCompositeOperation = 'copy';
         context.drawImage(this._bitmap.canvas, x, y, w, h, 0, 0, w, h);
 
         if (Graphics.canUseSaturationBlend()) {
-            var gray = Math.max(0, tone[3]);
+            let gray = Math.max(0, tone[3]);
             context.globalCompositeOperation = 'saturation';
             context.fillStyle = 'rgba(255,255,255,' + gray / 255 + ')';
             context.fillRect(0, 0, w, h);
         }
 
-        var r1 = Math.max(0, tone[0]);
-        var g1 = Math.max(0, tone[1]);
-        var b1 = Math.max(0, tone[2]);
+        let r1 = Math.max(0, tone[0]);
+        let g1 = Math.max(0, tone[1]);
+        let b1 = Math.max(0, tone[2]);
         context.globalCompositeOperation = 'lighter';
-        context.fillStyle = Utils.rgbToCssColor(r1, g1, b1);
+        context.fillStyle = Color.RGBToCSS(r1, g1, b1);
         context.fillRect(0, 0, w, h);
 
         if (Graphics.canUseDifferenceBlend()) {
@@ -4383,11 +4458,11 @@ class Sprite extends PIXI.Sprite {
             context.fillStyle = 'white';
             context.fillRect(0, 0, w, h);
 
-            var r2 = Math.max(0, -tone[0]);
-            var g2 = Math.max(0, -tone[1]);
-            var b2 = Math.max(0, -tone[2]);
+            let r2 = Math.max(0, -tone[0]);
+            let g2 = Math.max(0, -tone[1]);
+            let b2 = Math.max(0, -tone[2]);
             context.globalCompositeOperation = 'lighter';
-            context.fillStyle = Utils.rgbToCssColor(r2, g2, b2);
+            context.fillStyle = Color.RGBToCSS(r2, g2, b2);
             context.fillRect(0, 0, w, h);
 
             context.globalCompositeOperation = 'difference';
@@ -4395,12 +4470,12 @@ class Sprite extends PIXI.Sprite {
             context.fillRect(0, 0, w, h);
         }
 
-        var r3 = Math.max(0, color[0]);
-        var g3 = Math.max(0, color[1]);
-        var b3 = Math.max(0, color[2]);
-        var a3 = Math.max(0, color[3]);
+        let r3 = Math.max(0, color[0]);
+        let g3 = Math.max(0, color[1]);
+        let b3 = Math.max(0, color[2]);
+        let a3 = Math.max(0, color[3]);
         context.globalCompositeOperation = 'source-atop';
-        context.fillStyle = Utils.rgbToCssColor(r3, g3, b3);
+        context.fillStyle = Color.RGBToCSS(r3, g3, b3);
         context.globalAlpha = a3 / 255;
         context.fillRect(0, 0, w, h);
 
@@ -4408,14 +4483,6 @@ class Sprite extends PIXI.Sprite {
         context.globalAlpha = 1;
         context.drawImage(this._bitmap.canvas, x, y, w, h, 0, 0, w, h);
     };
-
-    _renderCanvas_PIXI() {
-        PIXI.Sprite.prototype._renderCanvas.call(this);
-    }
-
-    _renderWebGL_PIXI() {
-        PIXI.Sprite.prototype._renderWebGL.call(this);
-    }
 
     /**
      * @method _renderCanvas
@@ -4431,7 +4498,7 @@ class Sprite extends PIXI.Sprite {
         }
 
         if (this.texture.frame.width > 0 && this.texture.frame.height > 0) {
-            this._renderCanvas_PIXI(renderer);
+            super._renderCanvas(renderer);
         }
     };
 
@@ -4441,17 +4508,17 @@ class Sprite extends PIXI.Sprite {
      * @private
      */
     _speedUpCustomBlendModes(renderer) {
-        var picture = renderer.plugins.picture;
-        var blend = this.blendMode;
+        let picture = renderer.plugins.picture;
+        let blend = this.blendMode;
         if (renderer.renderingToScreen && renderer._activeRenderTarget.root) {
             if (picture.drawModes[blend]) {
-                var stage = renderer._lastObjectRendered;
-                var f = stage._filters;
+                let stage = renderer._lastObjectRendered;
+                let f = stage._filters;
                 if (!f || !f[0]) {
                     setTimeout(function () {
-                        var f = stage._filters;
+                        let f = stage._filters;
                         if (!f || !f[0]) {
-                            stage.filters = [Sprite.voidFilter];
+                            stage.filters = [Sprite.alphaFilter];
                             stage.filterArea = new PIXI.Rectangle(0, 0, Graphics.width, Graphics.height);
                         }
                     }, 0);
@@ -4493,114 +4560,9 @@ class Sprite extends PIXI.Sprite {
             }
         }
     };
-
-// The important members from Pixi.js
-
-    /**
-     * The visibility of the sprite.
-     *
-     * @property visible
-     * @type Boolean
-     */
-
-    /**
-     * The x coordinate of the sprite.
-     *
-     * @property x
-     * @type Number
-     */
-
-    /**
-     * The y coordinate of the sprite.
-     *
-     * @property y
-     * @type Number
-     */
-
-    /**
-     * The origin point of the sprite. (0,0) to (1,1).
-     *
-     * @property anchor
-     * @type Point
-     */
-
-    /**
-     * The scale factor of the sprite.
-     *
-     * @property scale
-     * @type Point
-     */
-
-    /**
-     * The rotation of the sprite in radians.
-     *
-     * @property rotation
-     * @type Number
-     */
-
-    /**
-     * The blend mode to be applied to the sprite.
-     *
-     * @property blendMode
-     * @type Number
-     */
-
-    /**
-     * Sets the filters for the sprite.
-     *
-     * @property filters
-     * @type Array
-     */
-
-    /**
-     * [read-only] The array of children of the sprite.
-     *
-     * @property children
-     * @type Array
-     */
-
-    /**
-     * [read-only] The object that contains the sprite.
-     *
-     * @property parent
-     * @type Object
-     */
-
-    /**
-     * Adds a child to the container.
-     *
-     * @method addChild
-     * @param {Object} child The child to add
-     * @return {Object} The child that was added
-     */
-
-    /**
-     * Adds a child to the container at a specified index.
-     *
-     * @method addChildAt
-     * @param {Object} child The child to add
-     * @param {Number} index The index to place the child in
-     * @return {Object} The child that was added
-     */
-
-    /**
-     * Removes a child from the container.
-     *
-     * @method removeChild
-     * @param {Object} child The child to remove
-     * @return {Object} The child that was removed
-     */
-
-    /**
-     * Removes a child from the specified index position.
-     *
-     * @method removeChildAt
-     * @param {Number} index The index to get the child from
-     * @return {Object} The child that was removed
-     */
 }
 
-Sprite.voidFilter = new PIXI.filters.VoidFilter();
+Sprite.alphaFilter = new PIXI.filters.AlphaFilter();
 
 // Number of the created objects.
 Sprite._counter = 0;
@@ -4770,7 +4732,7 @@ class Tilemap extends PIXI.Container {
      * @return {Boolean} True if the tilemap is ready
      */
     isReady() {
-        for (var i = 0; i < this.bitmaps.length; i++) {
+        for (let i = 0; i < this.bitmaps.length; i++) {
             if (this.bitmaps[i] && !this.bitmaps[i].isReady()) {
                 return false;
             }
@@ -4791,7 +4753,7 @@ class Tilemap extends PIXI.Container {
                 child.update();
             }
         });
-        for (var i = 0; i < this.bitmaps.length; i++) {
+        for (let i = 0; i < this.bitmaps.length; i++) {
             if (this.bitmaps[i]) {
                 this.bitmaps[i].touch();
             }
@@ -4821,10 +4783,10 @@ class Tilemap extends PIXI.Container {
      * @private
      */
     updateTransform() {
-        var ox = Math.floor(this.origin.x);
-        var oy = Math.floor(this.origin.y);
-        var startX = Math.floor((ox - this._margin) / this._tileWidth);
-        var startY = Math.floor((oy - this._margin) / this._tileHeight);
+        let ox = Math.floor(this.origin.x);
+        let oy = Math.floor(this.origin.y);
+        let startX = Math.floor((ox - this._margin) / this._tileWidth);
+        let startY = Math.floor((oy - this._margin) / this._tileHeight);
         this._updateLayerPositions(startX, startY);
         if (this._needsRepaint || this._lastAnimationFrame !== this.animationFrame ||
             this._lastStartX !== startX || this._lastStartY !== startY) {
@@ -4844,13 +4806,13 @@ class Tilemap extends PIXI.Container {
      * @private
      */
     _createLayers() {
-        var width = this._width;
-        var height = this._height;
-        var margin = this._margin;
-        var tileCols = Math.ceil(width / this._tileWidth) + 1;
-        var tileRows = Math.ceil(height / this._tileHeight) + 1;
-        var layerWidth = tileCols * this._tileWidth;
-        var layerHeight = tileRows * this._tileHeight;
+        let width = this._width;
+        let height = this._height;
+        let margin = this._margin;
+        let tileCols = Math.ceil(width / this._tileWidth) + 1;
+        let tileRows = Math.ceil(height / this._tileHeight) + 1;
+        let layerWidth = tileCols * this._tileWidth;
+        let layerHeight = tileRows * this._tileHeight;
         this._lowerBitmap = new Bitmap(layerWidth, layerHeight);
         this._upperBitmap = new Bitmap(layerWidth, layerHeight);
         this._layerWidth = layerWidth;
@@ -4878,7 +4840,7 @@ class Tilemap extends PIXI.Container {
         this._upperLayer.move(-margin, -margin, width, height);
         this._upperLayer.z = 4;
 
-        for (var i = 0; i < 4; i++) {
+        for (let i = 0; i < 4; i++) {
             this._lowerLayer.addChild(new Sprite(this._lowerBitmap));
             this._upperLayer.addChild(new Sprite(this._upperBitmap));
         }
@@ -4894,18 +4856,18 @@ class Tilemap extends PIXI.Container {
      * @private
      */
     _updateLayerPositions(startX, startY) {
-        var m = this._margin;
-        var ox = Math.floor(this.origin.x);
-        var oy = Math.floor(this.origin.y);
-        var x2 = (ox - m).mod(this._layerWidth);
-        var y2 = (oy - m).mod(this._layerHeight);
-        var w1 = this._layerWidth - x2;
-        var h1 = this._layerHeight - y2;
-        var w2 = this._width - w1;
-        var h2 = this._height - h1;
+        let m = this._margin;
+        let ox = Math.floor(this.origin.x);
+        let oy = Math.floor(this.origin.y);
+        let x2 = (ox - m).mod(this._layerWidth);
+        let y2 = (oy - m).mod(this._layerHeight);
+        let w1 = this._layerWidth - x2;
+        let h1 = this._layerHeight - y2;
+        let w2 = this._width - w1;
+        let h2 = this._height - h1;
 
-        for (var i = 0; i < 2; i++) {
-            var children;
+        for (let i = 0; i < 2; i++) {
+            let children;
             if (i === 0) {
                 children = this._lowerLayer.children;
             } else {
@@ -4929,10 +4891,10 @@ class Tilemap extends PIXI.Container {
      * @private
      */
     _paintAllTiles(startX, startY) {
-        var tileCols = Math.ceil(this._width / this._tileWidth) + 1;
-        var tileRows = Math.ceil(this._height / this._tileHeight) + 1;
-        for (var y = 0; y < tileRows; y++) {
-            for (var x = 0; x < tileCols; x++) {
+        let tileCols = Math.ceil(this._width / this._tileWidth) + 1;
+        let tileRows = Math.ceil(this._height / this._tileHeight) + 1;
+        for (let y = 0; y < tileRows; y++) {
+            for (let x = 0; x < tileCols; x++) {
                 this._paintTiles(startX, startY, x, y);
             }
         }
@@ -4947,21 +4909,21 @@ class Tilemap extends PIXI.Container {
      * @private
      */
     _paintTiles(startX, startY, x, y) {
-        var tableEdgeVirtualId = 10000;
-        var mx = startX + x;
-        var my = startY + y;
-        var dx = (mx * this._tileWidth).mod(this._layerWidth);
-        var dy = (my * this._tileHeight).mod(this._layerHeight);
-        var lx = dx / this._tileWidth;
-        var ly = dy / this._tileHeight;
-        var tileId0 = this._readMapData(mx, my, 0);
-        var tileId1 = this._readMapData(mx, my, 1);
-        var tileId2 = this._readMapData(mx, my, 2);
-        var tileId3 = this._readMapData(mx, my, 3);
-        var shadowBits = this._readMapData(mx, my, 4);
-        var upperTileId1 = this._readMapData(mx, my - 1, 1);
-        var lowerTiles = [];
-        var upperTiles = [];
+        let tableEdgeVirtualId = 10000;
+        let mx = startX + x;
+        let my = startY + y;
+        let dx = (mx * this._tileWidth).mod(this._layerWidth);
+        let dy = (my * this._tileHeight).mod(this._layerHeight);
+        let lx = dx / this._tileWidth;
+        let ly = dy / this._tileHeight;
+        let tileId0 = this._readMapData(mx, my, 0);
+        let tileId1 = this._readMapData(mx, my, 1);
+        let tileId2 = this._readMapData(mx, my, 2);
+        let tileId3 = this._readMapData(mx, my, 3);
+        let shadowBits = this._readMapData(mx, my, 4);
+        let upperTileId1 = this._readMapData(mx, my - 1, 1);
+        let lowerTiles = [];
+        let upperTiles = [];
 
         if (this._isHigherTile(tileId0)) {
             upperTiles.push(tileId0);
@@ -4998,12 +4960,12 @@ class Tilemap extends PIXI.Container {
             }
         }
 
-        var lastLowerTiles = this._readLastTiles(0, lx, ly);
+        let lastLowerTiles = this._readLastTiles(0, lx, ly);
         if (!lowerTiles.equals(lastLowerTiles) ||
             (Tilemap.isTileA1(tileId0) && this._frameUpdated)) {
             this._lowerBitmap.clearRect(dx, dy, this._tileWidth, this._tileHeight);
-            for (var i = 0; i < lowerTiles.length; i++) {
-                var lowerTileId = lowerTiles[i];
+            for (let i = 0; i < lowerTiles.length; i++) {
+                let lowerTileId = lowerTiles[i];
                 if (lowerTileId < 0) {
                     this._drawShadow(this._lowerBitmap, shadowBits, dx, dy);
                 } else if (lowerTileId >= tableEdgeVirtualId) {
@@ -5015,10 +4977,10 @@ class Tilemap extends PIXI.Container {
             this._writeLastTiles(0, lx, ly, lowerTiles);
         }
 
-        var lastUpperTiles = this._readLastTiles(1, lx, ly);
+        let lastUpperTiles = this._readLastTiles(1, lx, ly);
         if (!upperTiles.equals(lastUpperTiles)) {
             this._upperBitmap.clearRect(dx, dy, this._tileWidth, this._tileHeight);
-            for (var j = 0; j < upperTiles.length; j++) {
+            for (let j = 0; j < upperTiles.length; j++) {
                 this._drawTile(this._upperBitmap, upperTiles[j], dx, dy);
             }
             this._writeLastTiles(1, lx, ly, upperTiles);
@@ -5033,11 +4995,11 @@ class Tilemap extends PIXI.Container {
      * @private
      */
     _readLastTiles(i, x, y) {
-        var array1 = this._lastTiles[i];
+        let array1 = this._lastTiles[i];
         if (array1) {
-            var array2 = array1[y];
+            let array2 = array1[y];
             if (array2) {
-                var tiles = array2[x];
+                let tiles = array2[x];
                 if (tiles) {
                     return tiles;
                 }
@@ -5055,11 +5017,11 @@ class Tilemap extends PIXI.Container {
      * @private
      */
     _writeLastTiles(i, x, y, tiles) {
-        var array1 = this._lastTiles[i];
+        let array1 = this._lastTiles[i];
         if (!array1) {
             array1 = this._lastTiles[i] = [];
         }
-        var array2 = array1[y];
+        let array2 = array1[y];
         if (!array2) {
             array2 = array1[y] = [];
         }
@@ -5093,7 +5055,7 @@ class Tilemap extends PIXI.Container {
      * @private
      */
     _drawNormalTile(bitmap, tileId, dx, dy) {
-        var setNumber = 0;
+        let setNumber = 0;
 
         if (Tilemap.isTileA5(tileId)) {
             setNumber = 4;
@@ -5101,12 +5063,12 @@ class Tilemap extends PIXI.Container {
             setNumber = 5 + Math.floor(tileId / 256);
         }
 
-        var w = this._tileWidth;
-        var h = this._tileHeight;
-        var sx = (Math.floor(tileId / 128) % 2 * 8 + tileId % 8) * w;
-        var sy = (Math.floor(tileId % 256 / 8) % 16) * h;
+        let w = this._tileWidth;
+        let h = this._tileHeight;
+        let sx = (Math.floor(tileId / 128) % 2 * 8 + tileId % 8) * w;
+        let sy = (Math.floor(tileId % 256 / 8) % 16) * h;
 
-        var source = this.bitmaps[setNumber];
+        let source = this.bitmaps[setNumber];
         if (source) {
             bitmap.bltImage(source, sx, sy, w, h, dx, dy, w, h);
         }
@@ -5121,18 +5083,18 @@ class Tilemap extends PIXI.Container {
      * @private
      */
     _drawAutotile(bitmap, tileId, dx, dy) {
-        var autotileTable = Tilemap.FLOOR_AUTOTILE_TABLE;
-        var kind = Tilemap.getAutotileKind(tileId);
-        var shape = Tilemap.getAutotileShape(tileId);
-        var tx = kind % 8;
-        var ty = Math.floor(kind / 8);
-        var bx = 0;
-        var by = 0;
-        var setNumber = 0;
-        var isTable = false;
+        let autotileTable = Tilemap.FLOOR_AUTOTILE_TABLE;
+        let kind = Tilemap.getAutotileKind(tileId);
+        let shape = Tilemap.getAutotileShape(tileId);
+        let tx = kind % 8;
+        let ty = Math.floor(kind / 8);
+        let bx = 0;
+        let by = 0;
+        let setNumber = 0;
+        let isTable = false;
 
         if (Tilemap.isTileA1(tileId)) {
-            var waterSurfaceIndex = [0, 1, 2, 1][this.animationFrame % 4];
+            let waterSurfaceIndex = [0, 1, 2, 1][this.animationFrame % 4];
             setNumber = 0;
             if (kind === 0) {
                 bx = waterSurfaceIndex * 2;
@@ -5148,8 +5110,8 @@ class Tilemap extends PIXI.Container {
                 by = 3;
             } else {
                 bx = Math.floor(tx / 4) * 8;
-                by = ty * 6 + Math.floor(tx / 2) % 2 * 3;
-                if (kind % 2 === 0) {
+                by = ty * 6 + Math.floor(tx / 2) & 1 * 3;
+                if (kind & 1 === 0) {
                     bx += waterSurfaceIndex * 2;
                 }
                 else {
@@ -5171,34 +5133,34 @@ class Tilemap extends PIXI.Container {
         } else if (Tilemap.isTileA4(tileId)) {
             setNumber = 3;
             bx = tx * 2;
-            by = Math.floor((ty - 10) * 2.5 + (ty % 2 === 1 ? 0.5 : 0));
-            if (ty % 2 === 1) {
+            by = Math.floor((ty - 10) * 2.5 + (ty & 1 === 1 ? 0.5 : 0));
+            if (ty & 1 === 1) {
                 autotileTable = Tilemap.WALL_AUTOTILE_TABLE;
             }
         }
 
-        var table = autotileTable[shape];
-        var source = this.bitmaps[setNumber];
+        let table = autotileTable[shape];
+        let source = this.bitmaps[setNumber];
 
         if (table && source) {
-            var w1 = this._tileWidth / 2;
-            var h1 = this._tileHeight / 2;
-            for (var i = 0; i < 4; i++) {
-                var qsx = table[i][0];
+            let w1 = this._tileWidth / 2;
+            let h1 = this._tileHeight / 2;
+            for (let i = 0; i < 4; i++) {
+                let qsx = table[i][0];
 
-                var qsy = table[i][1];
-                var sx1 = (bx * 2 + qsx) * w1;
-                var sy1 = (by * 2 + qsy) * h1;
-                var dx1 = dx + (i % 2) * w1;
-                var dy1 = dy + Math.floor(i / 2) * h1;
+                let qsy = table[i][1];
+                let sx1 = (bx * 2 + qsx) * w1;
+                let sy1 = (by * 2 + qsy) * h1;
+                let dx1 = dx + (i & 1) * w1;
+                let dy1 = dy + Math.floor(i / 2) * h1;
                 if (isTable && (qsy === 1 || qsy === 5)) {
-                    var qsx2 = qsx;
-                    var qsy2 = 3;
+                    let qsx2 = qsx;
+                    let qsy2 = 3;
                     if (qsy === 1) {
                         qsx2 = [0, 3, 2, 1][qsx];
                     }
-                    var sx2 = (bx * 2 + qsx2) * w1;
-                    var sy2 = (by * 2 + qsy2) * h1;
+                    let sx2 = (bx * 2 + qsx2) * w1;
+                    let sy2 = (by * 2 + qsy2) * h1;
                     bitmap.bltImage(source, sx2, sy2, w1, h1, dx1, dy1, w1, h1);
                     dy1 += h1 / 2;
                     bitmap.bltImage(source, sx1, sy1, w1, h1 / 2, dx1, dy1, w1, h1 / 2);
@@ -5219,27 +5181,27 @@ class Tilemap extends PIXI.Container {
      */
     _drawTableEdge(bitmap, tileId, dx, dy) {
         if (Tilemap.isTileA2(tileId)) {
-            var autotileTable = Tilemap.FLOOR_AUTOTILE_TABLE;
-            var kind = Tilemap.getAutotileKind(tileId);
-            var shape = Tilemap.getAutotileShape(tileId);
-            var tx = kind % 8;
-            var ty = Math.floor(kind / 8);
-            var setNumber = 1;
-            var bx = tx * 2;
-            var by = (ty - 2) * 3;
-            var table = autotileTable[shape];
+            let autotileTable = Tilemap.FLOOR_AUTOTILE_TABLE;
+            let kind = Tilemap.getAutotileKind(tileId);
+            let shape = Tilemap.getAutotileShape(tileId);
+            let tx = kind % 8;
+            let ty = Math.floor(kind / 8);
+            let setNumber = 1;
+            let bx = tx * 2;
+            let by = (ty - 2) * 3;
+            let table = autotileTable[shape];
 
             if (table) {
-                var source = this.bitmaps[setNumber];
-                var w1 = this._tileWidth / 2;
-                var h1 = this._tileHeight / 2;
-                for (var i = 0; i < 2; i++) {
-                    var qsx = table[2 + i][0];
-                    var qsy = table[2 + i][1];
-                    var sx1 = (bx * 2 + qsx) * w1;
-                    var sy1 = (by * 2 + qsy) * h1 + h1 / 2;
-                    var dx1 = dx + (i % 2) * w1;
-                    var dy1 = dy + Math.floor(i / 2) * h1;
+                let source = this.bitmaps[setNumber];
+                let w1 = this._tileWidth / 2;
+                let h1 = this._tileHeight / 2;
+                for (let i = 0; i < 2; i++) {
+                    let qsx = table[2 + i][0];
+                    let qsy = table[2 + i][1];
+                    let sx1 = (bx * 2 + qsx) * w1;
+                    let sy1 = (by * 2 + qsy) * h1 + h1 / 2;
+                    let dx1 = dx + (i & 1) * w1;
+                    let dy1 = dy + Math.floor(i / 2) * h1;
                     bitmap.bltImage(source, sx1, sy1, w1, h1 / 2, dx1, dy1, w1, h1 / 2);
                 }
             }
@@ -5256,13 +5218,13 @@ class Tilemap extends PIXI.Container {
      */
     _drawShadow(bitmap, shadowBits, dx, dy) {
         if (shadowBits & 0x0f) {
-            var w1 = this._tileWidth / 2;
-            var h1 = this._tileHeight / 2;
-            var color = 'rgba(0,0,0,0.5)';
-            for (var i = 0; i < 4; i++) {
+            let w1 = this._tileWidth / 2;
+            let h1 = this._tileHeight / 2;
+            let color = 'rgba(0,0,0,0.5)';
+            for (let i = 0; i < 4; i++) {
                 if (shadowBits & (1 << i)) {
-                    var dx1 = dx + (i % 2) * w1;
-                    var dy1 = dy + Math.floor(i / 2) * h1;
+                    let dx1 = dx + (i & 1) * w1;
+                    let dy1 = dy + Math.floor(i / 2) * h1;
                     bitmap.fillRect(dx1, dy1, w1, h1, color);
                 }
             }
@@ -5279,8 +5241,8 @@ class Tilemap extends PIXI.Container {
      */
     _readMapData(x, y, z) {
         if (this._mapData) {
-            var width = this._mapWidth;
-            var height = this._mapHeight;
+            let width = this._mapWidth;
+            let height = this._mapHeight;
             if (this.horizontalWrap) {
                 x = x.mod(width);
             }
@@ -5410,7 +5372,7 @@ class Tilemap extends PIXI.Container {
 
     static isWaterfallTile(tileId) {
         if (tileId >= this.TILE_ID_A1 + 192 && tileId < this.TILE_ID_A2) {
-            return this.getAutotileKind(tileId) % 2 === 1;
+            return this.getAutotileKind(tileId) & 1 === 1;
         } else {
             return false;
         }
@@ -5585,55 +5547,6 @@ Tilemap.WATERFALL_AUTOTILE_TABLE = [
     [[2, 0], [3, 0], [2, 1], [3, 1]], [[0, 0], [3, 0], [0, 1], [3, 1]]
 ];
 
-// The important members from Pixi.js
-
-/**
- * [read-only] The array of children of the tilemap.
- *
- * @property children
- * @type Array
- */
-
-/**
- * [read-only] The object that contains the tilemap.
- *
- * @property parent
- * @type Object
- */
-
-/**
- * Adds a child to the container.
- *
- * @method addChild
- * @param {Object} child The child to add
- * @return {Object} The child that was added
- */
-
-/**
- * Adds a child to the container at a specified index.
- *
- * @method addChildAt
- * @param {Object} child The child to add
- * @param {Number} index The index to place the child in
- * @return {Object} The child that was added
- */
-
-/**
- * Removes a child from the container.
- *
- * @method removeChild
- * @param {Object} child The child to remove
- * @return {Object} The child that was removed
- */
-
-/**
- * Removes a child from the specified index position.
- *
- * @method removeChildAt
- * @param {Number} index The index to get the child from
- * @return {Object} The child that was removed
- */
-
 //-----------------------------------------------------------------------------
 /**
  * The tilemap which displays 2D tile-based game map using shaders
@@ -5655,7 +5568,7 @@ class ShaderTilemap extends Tilemap {
      */
 
     _hackRenderer(renderer) {
-        var af = this.animationFrame % 4;
+        let af = this.animationFrame % 4;
         if (af == 3) af = 1;
         renderer.plugins.tilemap.tileAnim[0] = af * this._tileWidth;
         renderer.plugins.tilemap.tileAnim[1] = (this.animationFrame % 3) * this._tileHeight;
@@ -5704,7 +5617,7 @@ class ShaderTilemap extends Tilemap {
      * @method updateBitmaps
      */
     refreshTileset() {
-        var bitmaps = this.bitmaps.map(function (x) {
+        let bitmaps = this.bitmaps.map(function (x) {
             return x._baseTexture ? new PIXI.Texture(x._baseTexture) : x;
         });
         this.lowerLayer.setBitmaps(bitmaps);
@@ -5716,7 +5629,7 @@ class ShaderTilemap extends Tilemap {
      * @private
      */
     updateTransform() {
-        var ox, oy;
+        let ox, oy;
         if (this.roundPixels) {
             ox = Math.floor(this.origin.x);
             oy = Math.floor(this.origin.y);
@@ -5724,8 +5637,8 @@ class ShaderTilemap extends Tilemap {
             ox = this.origin.x;
             oy = this.origin.y;
         }
-        var startX = Math.floor((ox - this._margin) / this._tileWidth);
-        var startY = Math.floor((oy - this._margin) / this._tileHeight);
+        let startX = Math.floor((ox - this._margin) / this._tileWidth);
+        let startY = Math.floor((oy - this._margin) / this._tileHeight);
         this._updateLayerPositions(startX, startY);
         if (this._needsRepaint ||
             this._lastStartX !== startX || this._lastStartY !== startY) {
@@ -5743,13 +5656,13 @@ class ShaderTilemap extends Tilemap {
      * @private
      */
     _createLayers() {
-        var width = this._width;
-        var height = this._height;
-        var margin = this._margin;
-        var tileCols = Math.ceil(width / this._tileWidth) + 1;
-        var tileRows = Math.ceil(height / this._tileHeight) + 1;
-        var layerWidth = this._layerWidth = tileCols * this._tileWidth;
-        var layerHeight = this._layerHeight = tileRows * this._tileHeight;
+        let width = this._width;
+        let height = this._height;
+        let margin = this._margin;
+        let tileCols = Math.ceil(width / this._tileWidth) + 1;
+        let tileRows = Math.ceil(height / this._tileHeight) + 1;
+        let layerWidth = this._layerWidth = tileCols * this._tileWidth;
+        let layerHeight = this._layerHeight = tileRows * this._tileHeight;
         this._needsRepaint = true;
 
         if (!this.lowerZLayer) {
@@ -5757,8 +5670,8 @@ class ShaderTilemap extends Tilemap {
             this.addChild(this.lowerZLayer = new PIXI.tilemap.ZLayer(this, 0));
             this.addChild(this.upperZLayer = new PIXI.tilemap.ZLayer(this, 4));
 
-            var parameters = PluginManager.parameters('ShaderTilemap');
-            var useSquareShader = Number(parameters.hasOwnProperty('squareShader') ? parameters['squareShader'] : 0);
+            let parameters = PluginManager.parameters('ShaderTilemap');
+            let useSquareShader = Number(parameters.hasOwnProperty('squareShader') ? parameters['squareShader'] : 0);
 
             this.lowerZLayer.addChild(this.lowerLayer = new PIXI.tilemap.CompositeRectTileLayer(0, [], useSquareShader));
             this.lowerLayer.shadowColor = new Float32Array([0.0, 0.0, 0.0, 0.5]);
@@ -5773,7 +5686,7 @@ class ShaderTilemap extends Tilemap {
      * @private
      */
     _updateLayerPositions(startX, startY) {
-        var ox, oy;
+        let ox, oy;
         if (this.roundPixels) {
             ox = Math.floor(this.origin.x);
             oy = Math.floor(this.origin.y);
@@ -5796,10 +5709,10 @@ class ShaderTilemap extends Tilemap {
     _paintAllTiles(startX, startY) {
         this.lowerZLayer.clear();
         this.upperZLayer.clear();
-        var tileCols = Math.ceil(this._width / this._tileWidth) + 1;
-        var tileRows = Math.ceil(this._height / this._tileHeight) + 1;
-        for (var y = 0; y < tileRows; y++) {
-            for (var x = 0; x < tileCols; x++) {
+        let tileCols = Math.ceil(this._width / this._tileWidth) + 1;
+        let tileRows = Math.ceil(this._height / this._tileHeight) + 1;
+        for (let y = 0; y < tileRows; y++) {
+            for (let x = 0; x < tileCols; x++) {
                 this._paintTiles(startX, startY, x, y);
             }
         }
@@ -5814,17 +5727,17 @@ class ShaderTilemap extends Tilemap {
      * @private
      */
     _paintTiles(startX, startY, x, y) {
-        var mx = startX + x;
-        var my = startY + y;
-        var dx = x * this._tileWidth, dy = y * this._tileHeight;
-        var tileId0 = this._readMapData(mx, my, 0);
-        var tileId1 = this._readMapData(mx, my, 1);
-        var tileId2 = this._readMapData(mx, my, 2);
-        var tileId3 = this._readMapData(mx, my, 3);
-        var shadowBits = this._readMapData(mx, my, 4);
-        var upperTileId1 = this._readMapData(mx, my - 1, 1);
-        var lowerLayer = this.lowerLayer.children[0];
-        var upperLayer = this.upperLayer.children[0];
+        let mx = startX + x;
+        let my = startY + y;
+        let dx = x * this._tileWidth, dy = y * this._tileHeight;
+        let tileId0 = this._readMapData(mx, my, 0);
+        let tileId1 = this._readMapData(mx, my, 1);
+        let tileId2 = this._readMapData(mx, my, 2);
+        let tileId3 = this._readMapData(mx, my, 3);
+        let shadowBits = this._readMapData(mx, my, 4);
+        let upperTileId1 = this._readMapData(mx, my - 1, 1);
+        let lowerLayer = this.lowerLayer.children[0];
+        let upperLayer = this.upperLayer.children[0];
 
         if (this._isHigherTile(tileId0)) {
             this._drawTile(upperLayer, tileId0, dx, dy);
@@ -5888,7 +5801,7 @@ class ShaderTilemap extends Tilemap {
      * @private
      */
     _drawNormalTile(layer, tileId, dx, dy) {
-        var setNumber = 0;
+        let setNumber = 0;
 
         if (Tilemap.isTileA5(tileId)) {
             setNumber = 4;
@@ -5896,10 +5809,10 @@ class ShaderTilemap extends Tilemap {
             setNumber = 5 + Math.floor(tileId / 256);
         }
 
-        var w = this._tileWidth;
-        var h = this._tileHeight;
-        var sx = (Math.floor(tileId / 128) % 2 * 8 + tileId % 8) * w;
-        var sy = (Math.floor(tileId % 256 / 8) % 16) * h;
+        let w = this._tileWidth;
+        let h = this._tileHeight;
+        let sx = (Math.floor(tileId / 128) % 2 * 8 + tileId % 8) * w;
+        let sy = (Math.floor(tileId % 256 / 8) % 16) * h;
 
         layer.addRect(setNumber, sx, sy, dx, dy, w, h);
     };
@@ -5913,16 +5826,16 @@ class ShaderTilemap extends Tilemap {
      * @private
      */
     _drawAutotile(layer, tileId, dx, dy) {
-        var autotileTable = Tilemap.FLOOR_AUTOTILE_TABLE;
-        var kind = Tilemap.getAutotileKind(tileId);
-        var shape = Tilemap.getAutotileShape(tileId);
-        var tx = kind % 8;
-        var ty = Math.floor(kind / 8);
-        var bx = 0;
-        var by = 0;
-        var setNumber = 0;
-        var isTable = false;
-        var animX = 0, animY = 0;
+        let autotileTable = Tilemap.FLOOR_AUTOTILE_TABLE;
+        let kind = Tilemap.getAutotileKind(tileId);
+        let shape = Tilemap.getAutotileShape(tileId);
+        let tx = kind % 8;
+        let ty = Math.floor(kind / 8);
+        let bx = 0;
+        let by = 0;
+        let setNumber = 0;
+        let isTable = false;
+        let animX = 0, animY = 0;
 
         if (Tilemap.isTileA1(tileId)) {
             setNumber = 0;
@@ -5941,7 +5854,7 @@ class ShaderTilemap extends Tilemap {
             } else {
                 bx = Math.floor(tx / 4) * 8;
                 by = ty * 6 + Math.floor(tx / 2) % 2 * 3;
-                if (kind % 2 === 0) {
+                if (kind & 1 === 0) {
                     animX = 2;
                 }
                 else {
@@ -5963,31 +5876,31 @@ class ShaderTilemap extends Tilemap {
         } else if (Tilemap.isTileA4(tileId)) {
             setNumber = 3;
             bx = tx * 2;
-            by = Math.floor((ty - 10) * 2.5 + (ty % 2 === 1 ? 0.5 : 0));
-            if (ty % 2 === 1) {
+            by = Math.floor((ty - 10) * 2.5 + (ty & 1 === 1 ? 0.5 : 0));
+            if (ty & 1 === 1) {
                 autotileTable = Tilemap.WALL_AUTOTILE_TABLE;
             }
         }
 
-        var table = autotileTable[shape];
-        var w1 = this._tileWidth / 2;
-        var h1 = this._tileHeight / 2;
-        for (var i = 0; i < 4; i++) {
-            var qsx = table[i][0];
-            var qsy = table[i][1];
-            var sx1 = (bx * 2 + qsx) * w1;
-            var sy1 = (by * 2 + qsy) * h1;
-            var dx1 = dx + (i % 2) * w1;
-            var dy1 = dy + Math.floor(i / 2) * h1;
+        let table = autotileTable[shape];
+        let w1 = this._tileWidth / 2;
+        let h1 = this._tileHeight / 2;
+        for (let i = 0; i < 4; i++) {
+            let qsx = table[i][0];
+            let qsy = table[i][1];
+            let sx1 = (bx * 2 + qsx) * w1;
+            let sy1 = (by * 2 + qsy) * h1;
+            let dx1 = dx + (i & 1) * w1;
+            let dy1 = dy + Math.floor(i / 2) * h1;
             if (isTable && (qsy === 1 || qsy === 5)) {
-                var qsx2 = qsx;
-                var qsy2 = 3;
+                let qsx2 = qsx;
+                let qsy2 = 3;
                 if (qsy === 1) {
                     //qsx2 = [0, 3, 2, 1][qsx];
                     qsx2 = (4 - qsx) % 4;
                 }
-                var sx2 = (bx * 2 + qsx2) * w1;
-                var sy2 = (by * 2 + qsy2) * h1;
+                let sx2 = (bx * 2 + qsx2) * w1;
+                let sy2 = (by * 2 + qsy2) * h1;
                 layer.addRect(setNumber, sx2, sy2, dx1, dy1, w1, h1, animX, animY);
                 layer.addRect(setNumber, sx1, sy1, dx1, dy1 + h1 / 2, w1, h1 / 2, animX, animY);
             } else {
@@ -6006,24 +5919,24 @@ class ShaderTilemap extends Tilemap {
      */
     _drawTableEdge(layer, tileId, dx, dy) {
         if (Tilemap.isTileA2(tileId)) {
-            var autotileTable = Tilemap.FLOOR_AUTOTILE_TABLE;
-            var kind = Tilemap.getAutotileKind(tileId);
-            var shape = Tilemap.getAutotileShape(tileId);
-            var tx = kind % 8;
-            var ty = Math.floor(kind / 8);
-            var setNumber = 1;
-            var bx = tx * 2;
-            var by = (ty - 2) * 3;
-            var table = autotileTable[shape];
-            var w1 = this._tileWidth / 2;
-            var h1 = this._tileHeight / 2;
-            for (var i = 0; i < 2; i++) {
-                var qsx = table[2 + i][0];
-                var qsy = table[2 + i][1];
-                var sx1 = (bx * 2 + qsx) * w1;
-                var sy1 = (by * 2 + qsy) * h1 + h1 / 2;
-                var dx1 = dx + (i % 2) * w1;
-                var dy1 = dy + Math.floor(i / 2) * h1;
+            let autotileTable = Tilemap.FLOOR_AUTOTILE_TABLE;
+            let kind = Tilemap.getAutotileKind(tileId);
+            let shape = Tilemap.getAutotileShape(tileId);
+            let tx = kind % 8;
+            let ty = Math.floor(kind / 8);
+            let setNumber = 1;
+            let bx = tx * 2;
+            let by = (ty - 2) * 3;
+            let table = autotileTable[shape];
+            let w1 = this._tileWidth / 2;
+            let h1 = this._tileHeight / 2;
+            for (let i = 0; i < 2; i++) {
+                let qsx = table[2 + i][0];
+                let qsy = table[2 + i][1];
+                let sx1 = (bx * 2 + qsx) * w1;
+                let sy1 = (by * 2 + qsy) * h1 + h1 / 2;
+                let dx1 = dx + (i & 1) * w1;
+                let dy1 = dy + Math.floor(i / 2) * h1;
                 layer.addRect(setNumber, sx1, sy1, dx1, dy1, w1, h1 / 2);
             }
         }
@@ -6039,12 +5952,12 @@ class ShaderTilemap extends Tilemap {
      */
     _drawShadow(layer, shadowBits, dx, dy) {
         if (shadowBits & 0x0f) {
-            var w1 = this._tileWidth / 2;
-            var h1 = this._tileHeight / 2;
-            for (var i = 0; i < 4; i++) {
+            let w1 = this._tileWidth / 2;
+            let h1 = this._tileHeight / 2;
+            for (let i = 0; i < 4; i++) {
                 if (shadowBits & (1 << i)) {
-                    var dx1 = dx + (i % 2) * w1;
-                    var dy1 = dy + Math.floor(i / 2) * h1;
+                    let dx1 = dx + (i & 1) * w1;
+                    let dy1 = dy + Math.floor(i / 2) * h1;
                     layer.addRect(-1, 0, 0, dx1, dy1, w1, h1);
                 }
             }
@@ -6068,7 +5981,7 @@ PIXI.tilemap.TileRenderer.DO_CLEAR = true;
  */
 class TilingSprite extends PIXI.extras.PictureTilingSprite {
     constructor(bitmap) {
-        var texture = new PIXI.Texture(new PIXI.BaseTexture());
+        let texture = new PIXI.Texture(new PIXI.BaseTexture());
 
         super(texture);
         this._bitmap = null;
@@ -6171,7 +6084,7 @@ class TilingSprite extends PIXI.extras.PictureTilingSprite {
      * @private
      */
     _refresh() {
-        var frame = this._frame.clone();
+        let frame = this._frame.clone();
         if (frame.width === 0 && frame.height === 0 && this._bitmap) {
             frame.width = this._bitmap.width;
             frame.height = this._bitmap.height;
@@ -6287,18 +6200,6 @@ class ScreenSprite extends PIXI.Container {
         this.setBlack();
     }
 
-    initialize() {
-        PIXI.Container.call(this);
-        this._graphics = new PIXI.Graphics();
-        this.addChild(this._graphics);
-        this.opacity = 0;
-        this._red = -1;
-        this._green = -1;
-        this._blue = -1;
-        this._colorText = '';
-        this.setBlack();
-    }
-
     /**
      * Sets black to the color of the screen sprite.
      *
@@ -6333,13 +6234,13 @@ class ScreenSprite extends PIXI.Container {
             this._red = r;
             this._green = g;
             this._blue = b;
-            this._colorText = Utils.rgbToCssColor(r, g, b);
+            this._colorText = Color.RGBToCSS(r, g, b);
 
-            var graphics = this._graphics;
+            let graphics = this._graphics;
             graphics.clear();
-            var intColor = (r << 16) | (g << 8) | b;
+            let intColor = (r << 16) | (g << 8) | b;
             graphics.beginFill(intColor, 1);
-            //whole screen with zoom. BWAHAHAHAHA
+            //whole screen with zoom.
             graphics.drawRect(-Graphics.width * 5, -Graphics.height * 5, Graphics.width * 10, Graphics.height * 10);
         }
     };
@@ -6422,6 +6323,9 @@ class Window extends PIXI.Container {
         this._windowArrowSprites = [];
         this._windowPauseSignSprite = null;
 
+        this._needsFrame = true;
+        this._needsRetouch = true;
+
         this._createAllParts();
 
         /**
@@ -6463,6 +6367,8 @@ class Window extends PIXI.Container {
          * @type Boolean
          */
         this.pause = false;
+
+
     }
 
     initialize() {
@@ -6474,6 +6380,7 @@ class Window extends PIXI.Container {
         this._cursorRect = new Rectangle();
         this._openness = 255;
         this._animationCount = 0;
+        this._retouch = false;
         this._padding = 18;
         this._margin = 4;
         this._colorTone = [0, 0, 0];
@@ -6484,6 +6391,8 @@ class Window extends PIXI.Container {
         this._windowContentsSprite = null;
         this._windowArrowSprites = [];
         this._windowPauseSignSprite = null;
+        this._needsFrame = true;
+        this._needsRetouch = false;
         this._createAllParts();
         this.origin = new Point();
         this.active = true;
@@ -6555,11 +6464,11 @@ class Window extends PIXI.Container {
      * @param {Number} height The height of the cursor
      */
     setCursorRect(x, y, width, height) {
-        var cx = Math.floor(x || 0);
-        var cy = Math.floor(y || 0);
-        var cw = Math.floor(width || 0);
-        var ch = Math.floor(height || 0);
-        var rect = this._cursorRect;
+        let cx = Math.floor(x || 0);
+        let cy = Math.floor(y || 0);
+        let cw = Math.floor(width || 0);
+        let ch = Math.floor(height || 0);
+        let rect = this._cursorRect;
         if (rect.x !== cx || rect.y !== cy || rect.width !== cw || rect.height !== ch) {
             this._cursorRect.x = cx;
             this._cursorRect.y = cy;
@@ -6578,7 +6487,7 @@ class Window extends PIXI.Container {
      * @param {Number} b The blue value in the range (-255, 255)
      */
     setTone(r, g, b) {
-        var tone = this._colorTone;
+        let tone = this._colorTone;
         if (r !== tone[0] || g !== tone[1] || b !== tone[2]) {
             this._colorTone = [r, g, b];
             this._refreshBack();
@@ -6593,7 +6502,7 @@ class Window extends PIXI.Container {
      * @return {Object} The child that was added
      */
     addChildToBack(child) {
-        var containerIndex = this.children.indexOf(this._windowSpriteContainer);
+        let containerIndex = this.children.indexOf(this._windowSpriteContainer);
         return this.addChildAt(child, containerIndex + 1);
     };
 
@@ -6660,25 +6569,39 @@ class Window extends PIXI.Container {
      * @private
      */
     _refreshBack() {
-        var m = this._margin;
-        var w = this._width - m * 2;
-        var h = this._height - m * 2;
-        var bitmap = new Bitmap(w, h);
+        let m = this._margin;
+        let w = this._width - m * 2;
+        let h = this._height - m * 2;
+        let bitmap = new Bitmap(w, h);
 
         this._windowBackSprite.bitmap = bitmap;
         this._windowBackSprite.setFrame(0, 0, w, h);
-        this._windowBackSprite.move(m, m);
+        this._windowBackSprite.position.set(m, m);
 
         if (w > 0 && h > 0 && this._windowskin) {
-            var p = 96;
-            bitmap.blt(this._windowskin, 0, 0, p, p, 0, 0, w, h);
-            for (var y = 0; y < h; y += p) {
-                for (var x = 0; x < w; x += p) {
-                    bitmap.blt(this._windowskin, 0, p, p, p, x, y, p, p);
+            let sw = 308, sh = 96, sy = 192,
+                dh = h < sh ? h : h - sh,
+                dw = w < sw ? w : w - sw;
+
+            for (dh; dh >= 0; dh -= sh) {
+                for (dw; dw >= 0; dw -= sw) {
+                    bitmap.blt(this._windowskin, 0, sy, sw, sh, dw, dh);
+                    if (dw > 0 && dw < sw) {
+                        bitmap.blt(this._windowskin, sw - dw, sy, dw, sh, 0, dh);
+                    }
+                }
+                dw = w < sw ? w : w - sw;
+
+                if (dh < sh) {
+                    for (dw; dw >= 0; dw -= sw) {
+                        bitmap.blt(this._windowskin, 0, sy + (sh - dh), sw, dh, dw, 0);
+                        if (dw > 0 && dw < sw) {
+                            bitmap.blt(this._windowskin, sw - dw, sy + (sh - dh), dw, dh, 0, 0);
+                        }
+                    }
+                    dw = w < sw ? w : w - sw;
                 }
             }
-            var tone = this._colorTone;
-            bitmap.adjustTone(tone[0], tone[1], tone[2]);
         }
     };
 
@@ -6687,18 +6610,23 @@ class Window extends PIXI.Container {
      * @private
      */
     _refreshFrame() {
-        var w = this._width;
-        var h = this._height;
-        var m = 24;
-        var bitmap = new Bitmap(w, h);
+        let w = this._width;
+        let h = this._height;
+        let m = 24;
+        let bitmap = new Bitmap(w, h);
 
         this._windowFrameSprite.bitmap = bitmap;
         this._windowFrameSprite.setFrame(0, 0, w, h);
 
-        if (w > 0 && h > 0 && this._windowskin) {
-            var skin = this._windowskin;
-            var p = 96;
-            var q = 96;
+        if (w > 0 && h > 0 && this._windowskin && this._needsFrame) {
+            let skin = this._windowskin;
+            let p = 96;
+            let q = 96;
+
+            bitmap.blt(skin, 192, 0, 58, 28, 0, 0, 58, 28);
+            bitmap.blt(skin, 250, 0, 58, 28, w - 58, 0, 58, 28);
+            bitmap.blt(skin, 192, 68, 58, 28, 0, h - 28, 58, 28);
+            bitmap.blt(skin, 250, 68, 58, 28, w - 58, h - 28, 58, 28);
             bitmap.blt(skin, p + m, 0, p - m * 2, m, m, 0, w - m * 2, m);
             bitmap.blt(skin, p + m, 0 + q - m, p - m * 2, m, m, h - m, w - m * 2, m);
             bitmap.blt(skin, p, 0 + m, m, p - m * 2, 0, m, m, h - m * 2);
@@ -6707,6 +6635,9 @@ class Window extends PIXI.Container {
             bitmap.blt(skin, p + q - m, 0, m, m, w - m, 0, m, m);
             bitmap.blt(skin, p, 0 + q - m, m, m, 0, h - m, m, m);
             bitmap.blt(skin, p + q - m, 0 + q - m, m, m, w - m, h - m, m, m);
+            if (this._needsRetouch) {
+                bitmap.blt(skin, 192, 96, 72, 48, w / 2 - 36, 0, 72, 48)
+            }
         }
     };
 
@@ -6715,28 +6646,28 @@ class Window extends PIXI.Container {
      * @private
      */
     _refreshCursor() {
-        var pad = this._padding;
-        var x = this._cursorRect.x + pad - this.origin.x;
-        var y = this._cursorRect.y + pad - this.origin.y;
-        var w = this._cursorRect.width;
-        var h = this._cursorRect.height;
-        var m = 4;
-        var x2 = Math.max(x, pad);
-        var y2 = Math.max(y, pad);
-        var ox = x - x2;
-        var oy = y - y2;
-        var w2 = Math.min(w, this._width - pad - x2);
-        var h2 = Math.min(h, this._height - pad - y2);
-        var bitmap = new Bitmap(w2, h2);
+        let pad = this._padding;
+        let x = this._cursorRect.x + pad - this.origin.x;
+        let y = this._cursorRect.y + pad - this.origin.y;
+        let w = this._cursorRect.width;
+        let h = this._cursorRect.height;
+        let m = 4;
+        let x2 = Math.max(x, pad);
+        let y2 = Math.max(y, pad);
+        let ox = x - x2;
+        let oy = y - y2;
+        let w2 = Math.min(w, this._width - pad - x2);
+        let h2 = Math.min(h, this._height - pad - y2);
+        let bitmap = new Bitmap(w2, h2);
 
         this._windowCursorSprite.bitmap = bitmap;
         this._windowCursorSprite.setFrame(0, 0, w2, h2);
-        this._windowCursorSprite.move(x2, y2);
+        this._windowCursorSprite.position.set(x2, y2);
 
         if (w > 0 && h > 0 && this._windowskin) {
-            var skin = this._windowskin;
-            var p = 96;
-            var q = 48;
+            let skin = this._windowskin;
+            let p = 96;
+            let q = 48;
             bitmap.blt(skin, p + m, p + m, q - m * 2, q - m * 2, ox + m, oy + m, w - m * 2, h - m * 2);
             bitmap.blt(skin, p + m, p, q - m * 2, m, ox + m, oy, w - m * 2, m);
             bitmap.blt(skin, p + m, p + q - m, q - m * 2, m, ox + m, oy + h - m, w - m * 2, m);
@@ -6754,7 +6685,7 @@ class Window extends PIXI.Container {
      * @private
      */
     _refreshContents() {
-        this._windowContentsSprite.move(this.padding, this.padding);
+        this._windowContentsSprite.position.set(this.padding, this.padding);
     };
 
     /**
@@ -6762,22 +6693,22 @@ class Window extends PIXI.Container {
      * @private
      */
     _refreshArrows() {
-        var w = this._width;
-        var h = this._height;
-        var p = 24;
-        var q = p / 2;
-        var sx = 96 + p;
-        var sy = 0 + p;
+        let w = this._width;
+        let h = this._height;
+        let p = 24;
+        let q = p / 2;
+        let sx = 96 + p;
+        let sy = 0 + p;
         this._downArrowSprite.bitmap = this._windowskin;
         this._downArrowSprite.anchor.x = 0.5;
         this._downArrowSprite.anchor.y = 0.5;
         this._downArrowSprite.setFrame(sx + q, sy + q + p, p, q);
-        this._downArrowSprite.move(w / 2, h - q);
+        this._downArrowSprite.position.set(w / 2, h - q);
         this._upArrowSprite.bitmap = this._windowskin;
         this._upArrowSprite.anchor.x = 0.5;
         this._upArrowSprite.anchor.y = 0.5;
         this._upArrowSprite.setFrame(sx + q, sy, p, q);
-        this._upArrowSprite.move(w / 2, q);
+        this._upArrowSprite.position.set(w / 2, q);
     };
 
     /**
@@ -6785,13 +6716,13 @@ class Window extends PIXI.Container {
      * @private
      */
     _refreshPauseSign() {
-        var sx = 144;
-        var sy = 96;
-        var p = 24;
+        let sx = 144;
+        let sy = 96;
+        let p = 24;
         this._windowPauseSignSprite.bitmap = this._windowskin;
         this._windowPauseSignSprite.anchor.x = 0.5;
         this._windowPauseSignSprite.anchor.y = 1;
-        this._windowPauseSignSprite.move(this._width / 2, this._height);
+        this._windowPauseSignSprite.position.set(this._width / 2, this._height);
         this._windowPauseSignSprite.setFrame(sx, sy, p, p);
         this._windowPauseSignSprite.alpha = 0;
     };
@@ -6801,16 +6732,7 @@ class Window extends PIXI.Container {
      * @private
      */
     _updateCursor() {
-        var blinkCount = this._animationCount % 80;
-        var cursorOpacity = this.contentsOpacity;
-        if (this.active) {
-            if (blinkCount < 40) {
-                cursorOpacity -= blinkCount * 8;
-            } else {
-                cursorOpacity -= (80 - blinkCount) * 8;
-            }
-        }
-        this._windowCursorSprite.alpha = cursorOpacity / 255;
+        this._windowCursorSprite.alpha = 0.5;
         this._windowCursorSprite.visible = this.isOpen();
     };
 
@@ -6819,8 +6741,8 @@ class Window extends PIXI.Container {
      * @private
      */
     _updateContents() {
-        var w = this._width - this._padding * 2;
-        var h = this._height - this._padding * 2;
+        let w = this._width - this._padding * 2;
+        let h = this._height - this._padding * 2;
         if (w > 0 && h > 0) {
             this._windowContentsSprite.setFrame(this.origin.x, this.origin.y, w, h);
             this._windowContentsSprite.visible = this.isOpen();
@@ -6843,12 +6765,12 @@ class Window extends PIXI.Container {
      * @private
      */
     _updatePauseSign() {
-        var sprite = this._windowPauseSignSprite;
-        var x = Math.floor(this._animationCount / 16) % 2;
-        var y = Math.floor(this._animationCount / 16 / 2) % 2;
-        var sx = 144;
-        var sy = 96;
-        var p = 24;
+        let sprite = this._windowPauseSignSprite;
+        let x = Math.floor(this._animationCount / 16) & 1;
+        let y = Math.floor(this._animationCount / 16 / 2) & 1;
+        let sx = 144;
+        let sy = 96;
+        let p = 24;
         if (!this.pause) {
             sprite.alpha = 0;
         } else if (sprite.alpha < 1) {
@@ -6857,6 +6779,24 @@ class Window extends PIXI.Container {
         sprite.setFrame(sx + x * p, sy + y * p, p, p);
         sprite.visible = this.isOpen();
     };
+
+    get needsRetouch() {
+        return this._retouch;
+    };
+
+    set needsRetouch(boolean) {
+        this._needsRetouch = boolean;
+        this._refreshFrame();
+    };
+
+    get needsFrame() {
+        return this._needsFrame;
+    }
+
+    set needsFrame(boolean) {
+        this._needsFrame = boolean;
+        this._refreshFrame();
+    }
 
 // The important members from Pixi.js
 
@@ -7123,8 +7063,7 @@ class WindowLayer extends PIXI.Container {
 
         this._renderSprite = null;
         this.filterArea = new PIXI.Rectangle();
-        this.filters = [WindowLayer.voidFilter];
-
+        this.filters = [WindowLayer.alphaFilter];
         //temporary fix for memory leak bug
         this.on('removed', this.onRemoveAsAChild);
     }
@@ -7179,8 +7118,8 @@ class WindowLayer extends PIXI.Container {
         this._tempCanvas.width = Graphics.width;
         this._tempCanvas.height = Graphics.height;
 
-        var realCanvasContext = renderer.context;
-        var context = this._tempCanvas.getContext('2d');
+        let realCanvasContext = renderer.context;
+        let context = this._tempCanvas.getContext('2d');
 
         context.save();
         context.clearRect(0, 0, Graphics.width, Graphics.height);
@@ -7191,8 +7130,8 @@ class WindowLayer extends PIXI.Container {
 
         renderer.context = context;
 
-        for (var i = 0; i < this.children.length; i++) {
-            var child = this.children[i];
+        let i = 0, len = this.children.length; for(; i < len; i++) {
+            let child = this.children[i];
             if (child._isWindow && child.visible && child.openness > 0) {
                 this._canvasClearWindowRect(renderer, child);
                 context.save();
@@ -7209,7 +7148,7 @@ class WindowLayer extends PIXI.Container {
         renderer.context.globalAlpha = 1;
         renderer.context.drawImage(this._tempCanvas, 0, 0);
 
-        for (var j = 0; j < this.children.length; j++) {
+        let j = 0; for(; j < len; j++) {
             if (!this.children[j]._isWindow) {
                 this.children[j].renderCanvas(renderer);
             }
@@ -7223,10 +7162,10 @@ class WindowLayer extends PIXI.Container {
      * @private
      */
     _canvasClearWindowRect(renderSession, window) {
-        var rx = this.x + window.x;
-        var ry = this.y + window.y + window.height / 2 * (1 - window._openness / 255);
-        var rw = window.width;
-        var rh = window.height * window._openness / 255;
+        let rx = this.x + window.x;
+        let ry = this.y + window.y + window.height / 2 * (1 - window._openness / 255);
+        let rw = window.width;
+        let rh = window.height * window._openness / 255;
         renderSession.context.clearRect(rx, ry, rw, rh);
     };
 
@@ -7249,14 +7188,14 @@ class WindowLayer extends PIXI.Container {
         renderer.filterManager.pushFilter(this, this.filters);
         renderer.currentRenderer.start();
 
-        var shift = new PIXI.Point();
-        var rt = renderer._activeRenderTarget;
-        var projectionMatrix = rt.projectionMatrix;
+        let shift = new PIXI.Point();
+        let rt = renderer._activeRenderTarget;
+        let projectionMatrix = rt.projectionMatrix;
         shift.x = Math.round((projectionMatrix.tx + 1) / 2 * rt.sourceFrame.width);
         shift.y = Math.round((projectionMatrix.ty + 1) / 2 * rt.sourceFrame.height);
 
-        for (var i = 0; i < this.children.length; i++) {
-            var child = this.children[i];
+        let i = 0, len = this.children.length; for(; i < len; i++) {
+            let child = this.children[i];
             if (child._isWindow && child.visible && child.openness > 0) {
                 this._maskWindow(child, shift);
                 renderer.maskManager.pushScissorMask(this, this._windowMask);
@@ -7272,7 +7211,7 @@ class WindowLayer extends PIXI.Container {
         renderer.filterManager.popFilter();
         renderer.maskManager.popScissorMask();
 
-        for (var j = 0; j < this.children.length; j++) {
+        let j = 0; for(; j < len; j++) {
             if (!this.children[j]._isWindow) {
                 this.children[j].renderWebGL(renderer);
             }
@@ -7287,78 +7226,15 @@ class WindowLayer extends PIXI.Container {
     _maskWindow(window, shift) {
         this._windowMask._currentBounds = null;
         this._windowMask.boundsDirty = true;
-        var rect = this._windowRect;
+        let rect = this._windowRect;
         rect.x = this.x + shift.x + window.x;
         rect.y = this.x + shift.y + window.y + window.height / 2 * (1 - window._openness / 255);
         rect.width = window.width;
         rect.height = window.height * window._openness / 255;
     };
-
-// The important members from Pixi.js
-
-    /**
-     * The x coordinate of the window layer.
-     *
-     * @property x
-     * @type Number
-     */
-
-    /**
-     * The y coordinate of the window layer.
-     *
-     * @property y
-     * @type Number
-     */
-
-    /**
-     * [read-only] The array of children of the window layer.
-     *
-     * @property children
-     * @type Array
-     */
-
-    /**
-     * [read-only] The object that contains the window layer.
-     *
-     * @property parent
-     * @type Object
-     */
-
-    /**
-     * Adds a child to the container.
-     *
-     * @method addChild
-     * @param {Object} child The child to add
-     * @return {Object} The child that was added
-     */
-
-    /**
-     * Adds a child to the container at a specified index.
-     *
-     * @method addChildAt
-     * @param {Object} child The child to add
-     * @param {Number} index The index to place the child in
-     * @return {Object} The child that was added
-     */
-
-    /**
-     * Removes a child from the container.
-     *
-     * @method removeChild
-     * @param {Object} child The child to remove
-     * @return {Object} The child that was removed
-     */
-
-    /**
-     * Removes a child from the specified index position.
-     *
-     * @method removeChildAt
-     * @param {Number} index The index to get the child from
-     * @return {Object} The child that was removed
-     */
 }
 
-WindowLayer.voidFilter = new PIXI.filters.VoidFilter();
+WindowLayer.alphaFilter = new PIXI.filters.AlphaFilter();
 
 /**
  * The width of the window layer in pixels.
@@ -7481,7 +7357,7 @@ class Weather extends PIXI.Container {
      * @private
      */
     _updateAllSprites() {
-        var maxSprites = Math.floor(this.power * 10);
+        let maxSprites = Math.floor(this.power * 10);
         while (this._sprites.length < maxSprites) {
             this._addSprite();
         }
@@ -7500,7 +7376,7 @@ class Weather extends PIXI.Container {
      * @private
      */
     _addSprite() {
-        var sprite = new Sprite(this.viewport);
+        let sprite = new Sprite(this.viewport);
         sprite.opacity = 0;
         this._sprites.push(sprite);
         this.addChild(sprite);
@@ -7635,7 +7511,7 @@ class ToneFilter extends PIXI.filters.ColorMatrixFilter {
         b = (b || 0).clamp(-255, 255) / 255;
 
         if (r !== 0 || g !== 0 || b !== 0) {
-            var matrix = [
+            let matrix = [
                 1, 0, 0, r, 0,
                 0, 1, 0, g, 0,
                 0, 0, 1, b, 0,
@@ -7695,11 +7571,11 @@ class ToneSprite extends PIXI.Container {
      */
     _renderCanvas(renderer) {
         if (this.visible) {
-            var context = renderer.context;
-            var t = this.worldTransform;
-            var r = renderer.resolution;
-            var width = Graphics.width;
-            var height = Graphics.height;
+            let context = renderer.context;
+            let t = this.worldTransform;
+            let r = renderer.resolution;
+            let width = Graphics.width;
+            let height = Graphics.height;
             context.save();
             context.setTransform(t.a, t.b, t.c, t.d, t.tx * r, t.ty * r);
             if (Graphics.canUseSaturationBlend() && this._gray > 0) {
@@ -7709,24 +7585,24 @@ class ToneSprite extends PIXI.Container {
                 context.fillRect(0, 0, width, height);
             }
             context.globalAlpha = 1;
-            var r1 = Math.max(0, this._red);
-            var g1 = Math.max(0, this._green);
-            var b1 = Math.max(0, this._blue);
+            let r1 = Math.max(0, this._red);
+            let g1 = Math.max(0, this._green);
+            let b1 = Math.max(0, this._blue);
             if (r1 || g1 || b1) {
                 context.globalCompositeOperation = 'lighter';
-                context.fillStyle = Utils.rgbToCssColor(r1, g1, b1);
+                context.fillStyle = Color.RGBToCSS(r1, g1, b1);
                 context.fillRect(0, 0, width, height);
             }
             if (Graphics.canUseDifferenceBlend()) {
-                var r2 = Math.max(0, -this._red);
-                var g2 = Math.max(0, -this._green);
-                var b2 = Math.max(0, -this._blue);
+                let r2 = Math.max(0, -this._red);
+                let g2 = Math.max(0, -this._green);
+                let b2 = Math.max(0, -this._blue);
                 if (r2 || g2 || b2) {
                     context.globalCompositeOperation = 'difference';
                     context.fillStyle = '#ffffff';
                     context.fillRect(0, 0, width, height);
                     context.globalCompositeOperation = 'lighter';
-                    context.fillStyle = Utils.rgbToCssColor(r2, g2, b2);
+                    context.fillStyle = Color.RGBToCSS(r2, g2, b2);
                     context.fillRect(0, 0, width, height);
                     context.globalCompositeOperation = 'difference';
                     context.fillStyle = '#ffffff';
@@ -7746,61 +7622,6 @@ class ToneSprite extends PIXI.Container {
         // Not supported
     };
 }
-
-//-----------------------------------------------------------------------------
-/**
- * The root object of the display tree.
- *
- * @class Stage
- * @constructor
- */
-class Stage extends PIXI.Container {
-    constructor() {
-        super();
-        // The interactive flag causes a memory leak.
-        this.interactive = false;
-    }
-}
-
-/**
- * [read-only] The array of children of the stage.
- *
- * @property children
- * @type Array
- */
-
-/**
- * Adds a child to the container.
- *
- * @method addChild
- * @param {Object} child The child to add
- * @return {Object} The child that was added
- */
-
-/**
- * Adds a child to the container at a specified index.
- *
- * @method addChildAt
- * @param {Object} child The child to add
- * @param {Number} index The index to place the child in
- * @return {Object} The child that was added
- */
-
-/**
- * Removes a child from the container.
- *
- * @method removeChild
- * @param {Object} child The child to remove
- * @return {Object} The child that was removed
- */
-
-/**
- * Removes a child from the specified index position.
- *
- * @method removeChildAt
- * @param {Number} index The index to get the child from
- * @return {Object} The child that was removed
- */
 
 //-----------------------------------------------------------------------------
 /**
@@ -7942,7 +7763,7 @@ class WebAudio {
      * @private
      */
     static _detectCodecs() {
-        var audio = document.createElement('audio');
+        let audio = document.createElement('audio');
         if (audio.canPlayType) {
             this._canPlayOgg = audio.canPlayType('audio/ogg');
             this._canPlayM4a = audio.canPlayType('audio/mp4');
@@ -7955,7 +7776,7 @@ class WebAudio {
      * @private
      */
     static _createMasterGainNode() {
-        var context = WebAudio._context;
+        let context = WebAudio._context;
         if (context) {
             this._masterGainNode = context.createGain();
             this._masterGainNode.gain.setValueAtTime(this._masterVolume, context.currentTime);
@@ -7970,7 +7791,7 @@ class WebAudio {
      */
     static _setupEventHandlers() {
         document.addEventListener("touchend", function () {
-            var context = WebAudio._context;
+            let context = WebAudio._context;
             if (context && context.state === "suspended" && typeof context.resume === "function") {
                 context.resume().then(function () {
                     WebAudio._onTouchStart();
@@ -7989,10 +7810,10 @@ class WebAudio {
      * @private
      */
     static _onTouchStart() {
-        var context = WebAudio._context;
+        let context = WebAudio._context;
         if (context && !this._unlocked) {
             // Unlock Web Audio on iOS
-            var node = context.createBufferSource();
+            let node = context.createBufferSource();
             node.start(0);
             this._unlocked = true;
         }
@@ -8050,8 +7871,8 @@ class WebAudio {
      */
     static _fadeIn(duration) {
         if (this._masterGainNode) {
-            var gain = this._masterGainNode.gain;
-            var currentTime = WebAudio._context.currentTime;
+            let gain = this._masterGainNode.gain;
+            let currentTime = WebAudio._context.currentTime;
             gain.setValueAtTime(0, currentTime);
             gain.linearRampToValueAtTime(this._masterVolume, currentTime + duration);
         }
@@ -8065,8 +7886,8 @@ class WebAudio {
      */
     static _fadeOut(duration) {
         if (this._masterGainNode) {
-            var gain = this._masterGainNode.gain;
-            var currentTime = WebAudio._context.currentTime;
+            let gain = this._masterGainNode.gain;
+            let currentTime = WebAudio._context.currentTime;
             gain.setValueAtTime(this._masterVolume, currentTime);
             gain.linearRampToValueAtTime(0, currentTime + duration);
         }
@@ -8134,7 +7955,7 @@ class WebAudio {
         this._removeNodes();
         if (this._stopListeners) {
             while (this._stopListeners.length > 0) {
-                var listner = this._stopListeners.shift();
+                let listner = this._stopListeners.shift();
                 listner();
             }
         }
@@ -8149,8 +7970,8 @@ class WebAudio {
     fadeIn(duration) {
         if (this.isReady()) {
             if (this._gainNode) {
-                var gain = this._gainNode.gain;
-                var currentTime = WebAudio._context.currentTime;
+                let gain = this._gainNode.gain;
+                let currentTime = WebAudio._context.currentTime;
                 gain.setValueAtTime(0, currentTime);
                 gain.linearRampToValueAtTime(this._volume, currentTime + duration);
             }
@@ -8169,8 +7990,8 @@ class WebAudio {
      */
     fadeOut(duration) {
         if (this._gainNode) {
-            var gain = this._gainNode.gain;
-            var currentTime = WebAudio._context.currentTime;
+            let gain = this._gainNode.gain;
+            let currentTime = WebAudio._context.currentTime;
             gain.setValueAtTime(this._volume, currentTime);
             gain.linearRampToValueAtTime(0, currentTime + duration);
         }
@@ -8184,7 +8005,7 @@ class WebAudio {
      */
     seek() {
         if (WebAudio._context) {
-            var pos = (WebAudio._context.currentTime - this._startTime) * this._pitch;
+            let pos = (WebAudio._context.currentTime - this._startTime) * this._pitch;
             if (this._loopLength > 0) {
                 while (pos >= this._loopStart + this._loopLength) {
                     pos -= this._loopLength;
@@ -8223,11 +8044,11 @@ class WebAudio {
      */
     _load(url) {
         if (WebAudio._context) {
-            var xhr = new XMLHttpRequest();
+            let xhr = new XMLHttpRequest();
             if (Decrypter.hasEncryptedAudio) url = Decrypter.extToEncryptExt(url);
             xhr.open('GET', url);
             xhr.responseType = 'arraybuffer';
-            xhr.onload = function() {
+            xhr.onload = function () {
                 if (xhr.status < 400) {
                     this._onXhrLoad(xhr);
                 }
@@ -8245,7 +8066,7 @@ class WebAudio {
      * @private
      */
     _onXhrLoad(xhr) {
-        var array = xhr.response;
+        let array = xhr.response;
         if (Decrypter.hasEncryptedAudio) array = Decrypter.decryptArrayBuffer(array);
         this._readLoopComments(new Uint8Array(array));
         WebAudio._context.decodeAudioData(array, function (buffer) {
@@ -8284,7 +8105,7 @@ class WebAudio {
      * @private
      */
     _createNodes() {
-        var context = WebAudio._context;
+        let context = WebAudio._context;
         this._sourceNode = context.createBufferSource();
         this._sourceNode.buffer = this._buffer;
         this._sourceNode.loopStart = this._loopStart;
@@ -8326,8 +8147,8 @@ class WebAudio {
      */
     _createEndTimer() {
         if (this._sourceNode && !this._sourceNode.loop) {
-            var endTime = this._startTime + this._totalTime / this._pitch;
-            var delay = endTime - WebAudio._context.currentTime;
+            let endTime = this._startTime + this._totalTime / this._pitch;
+            let delay = endTime - WebAudio._context.currentTime;
             this._endTimer = setTimeout(function () {
                 this.stop();
             }.bind(this), delay * 1000);
@@ -8351,8 +8172,8 @@ class WebAudio {
      */
     _updatePanner() {
         if (this._pannerNode) {
-            var x = this._pan;
-            var z = 1 - Math.abs(x);
+            let x = this._pan;
+            let z = 1 - Math.abs(x);
             this._pannerNode.setPosition(x, 0, z);
         }
     };
@@ -8363,7 +8184,7 @@ class WebAudio {
      */
     _onLoad() {
         while (this._loadListeners.length > 0) {
-            var listner = this._loadListeners.shift();
+            let listner = this._loadListeners.shift();
             listner();
         }
     };
@@ -8384,19 +8205,19 @@ class WebAudio {
      * @private
      */
     _readOgg(array) {
-        var index = 0;
+        let index = 0;
         while (index < array.length) {
             if (this._readFourCharacters(array, index) === 'OggS') {
                 index += 26;
-                var vorbisHeaderFound = false;
-                var numSegments = array[index++];
-                var segments = [];
-                for (var i = 0; i < numSegments; i++) {
+                let vorbisHeaderFound = false;
+                let numSegments = array[index++];
+                let segments = [];
+                for (let i = 0; i < numSegments; i++) {
                     segments.push(array[index++]);
                 }
-                for (i = 0; i < numSegments; i++) {
+                for (let i = 0; i < numSegments; i++) {
                     if (this._readFourCharacters(array, index + 1) === 'vorb') {
-                        var headerType = array[index];
+                        let headerType = array[index];
                         if (headerType === 1) {
                             this._sampleRate = this._readLittleEndian(array, index + 12);
                         } else if (headerType === 3) {
@@ -8422,10 +8243,10 @@ class WebAudio {
      */
     _readMp4(array) {
         if (this._readFourCharacters(array, 4) === 'ftyp') {
-            var index = 0;
+            let index = 0;
             while (index < array.length) {
-                var size = this._readBigEndian(array, index);
-                var name = this._readFourCharacters(array, index + 4);
+                let size = this._readBigEndian(array, index);
+                let name = this._readFourCharacters(array, index + 4);
                 if (name === 'moov') {
                     index += 8;
                 } else {
@@ -8452,9 +8273,9 @@ class WebAudio {
      * @private
      */
     _readMetaData(array, index, size) {
-        for (var i = index; i < index + size - 10; i++) {
+        for (let i = index; i < index + size - 10; i++) {
             if (this._readFourCharacters(array, i) === 'LOOP') {
-                var text = '';
+                let text = '';
                 while (array[i] > 0) {
                     text += String.fromCharCode(array[i++]);
                 }
@@ -8465,7 +8286,7 @@ class WebAudio {
                     this._loopLength = parseInt(RegExp.$1);
                 }
                 if (text == 'LOOPSTART' || text == 'LOOPLENGTH') {
-                    var text2 = '';
+                    let text2 = '';
                     i += 16;
                     while (array[i] > 0) {
                         text2 += String.fromCharCode(array[i++]);
@@ -8509,8 +8330,8 @@ class WebAudio {
      * @private
      */
     _readFourCharacters(array, index) {
-        var string = '';
-        for (var i = 0; i < 4; i++) {
+        let string = '';
+        for (let i = 0; i < 4; i++) {
             string += String.fromCharCode(array[index + i]);
         }
         return string;
@@ -8519,8 +8340,7 @@ class WebAudio {
 
 WebAudio._standAlone = (function (top) {
     return !top.ResourceHandler;
-})(this);
-
+})(window);
 WebAudio._masterVolume = 1;
 WebAudio._context = null;
 WebAudio._masterGainNode = null;
@@ -8956,7 +8776,7 @@ class Html5Audio {
     static _onLoad() {
         this._isLoading = false;
         while (this._loadListeners.length > 0) {
-            var listener = this._loadListeners.shift();
+            let listener = this._loadListeners.shift();
             listener();
         }
     };
@@ -9065,9 +8885,9 @@ class JsonEx {
      * @return {String} The JSON string
      */
     static stringify(object) {
-        var circular = [];
+        let circular = [];
         JsonEx._id = 1;
-        var json = JSON.stringify(this._encode(object, circular, 0));
+        let json = JSON.stringify(this._encode(object, circular, 0));
         this._cleanMetadata(object);
         this._restoreCircularReference(circular);
 
@@ -9076,9 +8896,9 @@ class JsonEx {
 
     static _restoreCircularReference(circulars) {
         circulars.forEach(function (circular) {
-            var key = circular[0];
-            var value = circular[1];
-            var content = circular[2];
+            let key = circular[0];
+            let value = circular[1];
+            let content = circular[2];
 
             value[key] = content;
         });
@@ -9093,20 +8913,19 @@ class JsonEx {
      * @return {Object} The reconstructed object
      */
     static parse(json) {
-        var circular = [];
-        var registry = {};
-        var contents = this._decode(JSON.parse(json), circular, registry);
+        let circular = [];
+        let registry = {};
+        let contents = this._decode(JSON.parse(json), circular, registry);
         this._cleanMetadata(contents);
         this._linkCircularReference(contents, circular, registry);
-
         return contents;
     };
 
     static _linkCircularReference(contents, circulars, registry) {
         circulars.forEach(function (circular) {
-            var key = circular[0];
-            var value = circular[1];
-            var id = circular[2];
+            let key = circular[0];
+            let value = circular[1];
+            let id = circular[2];
 
             value[key] = registry[id];
         });
@@ -9120,14 +8939,13 @@ class JsonEx {
 
         if (typeof object === 'object') {
             Object.keys(object).forEach(function (key) {
-                var value = object[key];
+                let value = object[key];
                 if (typeof value === 'object') {
                     JsonEx._cleanMetadata(value);
                 }
             });
         }
     };
-
 
     /**
      * Makes a deep copy of the specified object.
@@ -9138,6 +8956,7 @@ class JsonEx {
      * @return {Object} The copied object
      */
     static makeDeepCopy(object) {
+        let string = this.stringify(object);
         return this.parse(this.stringify(object));
     };
 
@@ -9155,15 +8974,15 @@ class JsonEx {
         if (++depth >= this.maxDepth) {
             throw new Error('Object too deep');
         }
-        var type = Object.prototype.toString.call(value);
+        let type = Object.prototype.toString.call(value);
         if (type === '[object Object]' || type === '[object Array]') {
             value['@c'] = JsonEx._generateId();
 
-            var constructorName = this._getConstructorName(value);
+            let constructorName = this._getConstructorName(value);
             if (constructorName !== 'Object' && constructorName !== 'Array') {
                 value['@'] = constructorName;
             }
-            for (var key in value) {
+            for (let key in value) {
                 if (value.hasOwnProperty(key) && !key.match(/^@./)) {
                     if (value[key] && typeof value[key] === 'object') {
                         if (value[key]['@c']) {
@@ -9202,21 +9021,21 @@ class JsonEx {
      * @private
      */
     static _decode(value, circular, registry) {
-        var type = Object.prototype.toString.call(value);
+        let type = Object.prototype.toString.call(value);
         if (type === '[object Object]' || type === '[object Array]') {
             registry[value['@c']] = value;
 
             if (value['@']) {
-                var constructor = window[value['@']];
+                let constructor = window[value['@']];
                 if (constructor) {
                     value = this._resetPrototype(value, constructor.prototype);
                 }
             }
-            for (var key in value) {
+            for (let key in value) {
                 if (value.hasOwnProperty(key)) {
                     if (value[key] && value[key]['@a']) {
                         //object is array wrapper
-                        var body = value[key]['@a'];
+                        let body = value[key]['@a'];
                         body['@c'] = value[key]['@c'];
                         value[key] = body;
                     }
@@ -9239,9 +9058,9 @@ class JsonEx {
      * @private
      */
     static _getConstructorName(value) {
-        var name = value.constructor.name;
+        let name = value.constructor.name;
         if (name === undefined) {
-            var func = /^\s*function\s*([A-Za-z0-9_$]*)/;
+            let func = /^\s*function\s*([A-Za-z0-9_$]*)/;
             name = func.exec(value.constructor)[1];
         }
         return name;
@@ -9261,8 +9080,8 @@ class JsonEx {
         } else if ('__proto__' in value) {
             value.__proto__ = prototype;
         } else {
-            var newValue = Object.create(prototype);
-            for (var key in value) {
+            let newValue = Object.create(prototype);
+            for (let key in value) {
                 if (value.hasOwnProperty(key)) {
                     newValue[key] = value[key];
                 }
@@ -9295,7 +9114,7 @@ class Decrypter {
     }
 
     static checkImgIgnore(url) {
-        for (var cnt = 0; cnt < this._ignoreList.length; cnt++) {
+        for (let cnt = 0; cnt < this._ignoreList.length; cnt++) {
             if (url === this._ignoreList[cnt]) return true;
         }
         return false;
@@ -9304,24 +9123,21 @@ class Decrypter {
     static decryptImg(url, bitmap) {
         url = this.extToEncryptExt(url);
 
-        var requestFile = new XMLHttpRequest();
+        let requestFile = new XMLHttpRequest();
         requestFile.open("GET", url);
         requestFile.responseType = "arraybuffer";
         requestFile.send();
 
-        requestFile.onload()
-        {
+        requestFile.onload = function () {
             if (this.status < Decrypter._xhrOk) {
-                var arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response);
+                let arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response);
                 bitmap._image.src = Decrypter.createBlobUrl(arrayBuffer);
                 bitmap._image.addEventListener('load', bitmap._loadListener = Bitmap.prototype._onLoad.bind(bitmap));
                 bitmap._image.addEventListener('error', bitmap._errorListener = bitmap._loader || Bitmap.prototype._onError.bind(bitmap));
             }
-        }
-        ;
+        };
 
-        requestFile.onerror()
-        {
+        requestFile.onerror = function () {
             if (bitmap._loader) {
                 bitmap._loader();
             } else {
@@ -9332,15 +9148,15 @@ class Decrypter {
     };
 
     static decryptHTML5Audio(url, bgm, pos) {
-        var requestFile = new XMLHttpRequest();
+        let requestFile = new XMLHttpRequest();
         requestFile.open("GET", url);
         requestFile.responseType = "arraybuffer";
         requestFile.send();
 
         requestFile.onload = function () {
             if (this.status < Decrypter._xhrOk) {
-                var arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response);
-                var url = Decrypter.createBlobUrl(arrayBuffer);
+                let arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response);
+                let url = Decrypter.createBlobUrl(arrayBuffer);
                 AudioManager.createDecryptBuffer(url, bgm, pos);
             }
         };
@@ -9352,11 +9168,11 @@ class Decrypter {
 
     static decryptArrayBuffer(arrayBuffer) {
         if (!arrayBuffer) return null;
-        var header = new Uint8Array(arrayBuffer, 0, this._headerlength);
+        let header = new Uint8Array(arrayBuffer, 0, this._headerlength);
 
-        var i;
-        var ref = this.SIGNATURE + this.VER + this.REMAIN;
-        var refBytes = new Uint8Array(16);
+        let i;
+        let ref = this.SIGNATURE + this.VER + this.REMAIN;
+        let refBytes = new Uint8Array(16);
         for (i = 0; i < this._headerlength; i++) {
             refBytes[i] = parseInt("0x" + ref.substr(i * 2, 2), 16);
         }
@@ -9367,10 +9183,10 @@ class Decrypter {
         }
 
         arrayBuffer = this.cutArrayHeader(arrayBuffer, Decrypter._headerlength);
-        var view = new DataView(arrayBuffer);
+        let view = new DataView(arrayBuffer);
         this.readEncryptionkey();
         if (arrayBuffer) {
-            var byteArray = new Uint8Array(arrayBuffer);
+            let byteArray = new Uint8Array(arrayBuffer);
             for (i = 0; i < this._headerlength; i++) {
                 byteArray[i] = byteArray[i] ^ parseInt(Decrypter._encryptionKey[i], 16);
                 view.setUint8(i, byteArray[i]);
@@ -9381,13 +9197,13 @@ class Decrypter {
     };
 
     static createBlobUrl(arrayBuffer) {
-        var blob = new Blob([arrayBuffer]);
+        let blob = new Blob([arrayBuffer]);
         return window.URL.createObjectURL(blob);
     };
 
     static extToEncryptExt(url) {
-        var ext = url.split('.').pop();
-        var encryptedExt = ext;
+        let ext = url.split('.').pop();
+        let encryptedExt = ext;
 
         if (ext === "ogg") encryptedExt = ".rpgmvo";
         else if (ext === "m4a") encryptedExt = ".rpgmvm";
@@ -9428,8 +9244,8 @@ class ResourceHandler {
 
     static createLoader(url, retryMethod, resignMethod, retryInterval) {
         retryInterval = retryInterval || this._defaultRetryInterval;
-        var reloaders = this._reloaders;
-        var retryCount = 0;
+        let reloaders = this._reloaders;
+        let retryCount = 0;
         return function () {
             if (retryCount < retryInterval.length) {
                 setTimeout(retryMethod, retryInterval[retryCount]);

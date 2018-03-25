@@ -1,5 +1,5 @@
 //=============================================================================
-// rpg_managers.js v1.5.1
+// _managers.js
 //=============================================================================
 
 'use strict';
@@ -15,24 +15,37 @@ class DataManager {
     }
 
     static loadDatabase() {
-        var test = this.isBattleTest() || this.isEventTest();
-        var prefix = test ? 'Test_' : '';
-        for (var i = 0; i < this._databaseFiles.length; i++) {
-            var name = this._databaseFiles[i].name;
-            var src = this._databaseFiles[i].src;
+        //MVNodeFS.writeFile('data/', "Test_ABC.json", 'ABc');
+
+        /*
+        let test = this.isBattleTest() || this.isEventTest();
+        let prefix = test ? 'Test_' : '';
+        for (let i = 0; i < this._databaseFiles.length; i++) {
+            let name = this._databaseFiles[i].name;
+            let src = this._databaseFiles[i].src;
             this.loadDataFile(name, prefix + src);
         }
         if (this.isEventTest()) {
             this.loadDataFile('$testEvent', prefix + 'Event.json');
         }
+         */
+        for (let i = 0; i < this._databaseFiles.length; i++) {
+            let name = this._databaseFiles[i].name;
+            let src = this._databaseFiles[i].src;
+            this.loadDataFile(name, src);
+        }
+        if (this.isEventTest()) {
+            this.loadDataFile('$testEvent', 'Event.json');
+        }
     };
 
     static loadDataFile(name, src) {
-        var xhr = new XMLHttpRequest();
-        var url = 'data/' + src;
+        let xhr = new XMLHttpRequest();
+        let url = 'data/' + src;
         xhr.open('GET', url);
         xhr.overrideMimeType('application/json');
         xhr.onload = function () {
+            // Reserved DataManager.createTestFile();
             if (xhr.status < 400) {
                 window[name] = JSON.parse(xhr.responseText);
                 DataManager.onLoad(window[name]);
@@ -43,11 +56,34 @@ class DataManager {
         };
         window[name] = null;
         xhr.send();
+
+        /*
+        var url = 'data/' + src;
+        if (!this._loader.resources[name]) {
+            this._loader.add(name, url);
+        }
+
+        this._loader.load();
+        this._loader.onLoad.add(function() {
+            window[name] = DataManager._loader.resources[name];
+            DataManager.onLoad(window[name]);
+        });
+
+        this._loader.onError.add(function () {
+            if (!!DataManager._mapLoader) return DataManager._mapLoader;
+            DataManager._errorUrl = DataManager._errorUrl || url;
+        });
+        */
     };
+
+    static createTestFile(name) {
+        //MVNodeFS.writeFile();
+        //window[name] = JSON.parse(xhr.responseText);
+    }
 
     static isDatabaseLoaded() {
         this.checkError();
-        for (var i = 0; i < this._databaseFiles.length; i++) {
+        for (let i = 0; i < this._databaseFiles.length; i++) {
             if (!window[this._databaseFiles[i].name]) {
                 return false;
             }
@@ -57,7 +93,7 @@ class DataManager {
 
     static loadMapData(mapId) {
         if (mapId > 0) {
-            var filename = 'Map%1.json'.format(mapId.padZero(3));
+            let filename = 'Map%1.json'.format(mapId.padZero(3));
             this._mapLoader = ResourceHandler.createLoader('data/' + filename, this.loadDataFile.bind(this, '$dataMap', filename));
             this.loadDataFile('$dataMap', filename);
         } else {
@@ -80,7 +116,7 @@ class DataManager {
     };
 
     static onLoad(object) {
-        var array;
+        let array;
         if (object === $dataMap) {
             this.extractMetadata(object);
             array = object.events;
@@ -88,8 +124,8 @@ class DataManager {
             array = object;
         }
         if (Array.isArray(array)) {
-            for (var i = 0; i < array.length; i++) {
-                var data = array[i];
+            for (let i = 0; i < array.length; i++) {
+                let data = array[i];
                 if (data && data.note !== undefined) {
                     this.extractMetadata(data);
                 }
@@ -103,10 +139,10 @@ class DataManager {
     };
 
     static extractMetadata(data) {
-        var re = /<([^<>:]+)(:?)([^>]*)>/g;
+        let re = /<([^<>:]+)(:?)([^>]*)>/g;
         data.meta = {};
         for (; ;) {
-            var match = re.exec(data.note);
+            let match = re.exec(data.note);
             if (match) {
                 if (match[2] === ':') {
                     data.meta[match[1]] = match[3];
@@ -150,19 +186,19 @@ class DataManager {
     };
 
     static createGameObjects() {
-        $gameTemp = new Game_Temp();
-        $gameSystem = new Game_System();
-        $gameScreen = new Game_Screen();
-        $gameTimer = new Game_Timer();
-        $gameMessage = new Game_Message();
-        $gameSwitches = new Game_Switches();
-        $gameVariables = new Game_Variables();
-        $gameSelfSwitches = new Game_SelfSwitches();
-        $gameActors = new Game_Actors();
-        $gameParty = new Game_Party();
-        $gameTroop = new Game_Troop();
-        $gameMap = new Game_Map();
-        $gamePlayer = new Game_Player();
+        window.$gameTemp = new Game_Temp();
+        window.$gameSystem = new Game_System();
+        window.$gameScreen = new Game_Screen();
+        window.$gameTimer = new Game_Timer();
+        window.$gameMessage = new Game_Message();
+        window.$gameSwitches = new Game_Switches();
+        window.$gameVariables = new Game_Variables();
+        window.$gameSelfSwitches = new Game_SelfSwitches();
+        window.$gameActors = new Game_Actors();
+        window.$gameParty = new Game_Party();
+        window.$gameTroop = new Game_Troop();
+        window.$gameMap = new Game_Map();
+        window.$gamePlayer = new Game_Player();
     };
 
     static setupNewGame() {
@@ -191,7 +227,7 @@ class DataManager {
     };
 
     static loadGlobalInfo() {
-        var json;
+        let json;
         try {
             json = StorageManager.load(0);
         } catch (e) {
@@ -199,9 +235,9 @@ class DataManager {
             return [];
         }
         if (json) {
-            var globalInfo = JSON.parse(json);
-            for (var i = 1; i <= this.maxSavefiles(); i++) {
-                if (StorageManager.exists(i)) {
+            let globalInfo = JSON.parse(json);
+            for (let i = 1; i <= this.maxSavefiles(); i++) {
+                if (!StorageManager.exists(i)) {
                     delete globalInfo[i];
                 }
             }
@@ -216,16 +252,13 @@ class DataManager {
     };
 
     static isThisGameFile(savefileId) {
-        var globalInfo = this.loadGlobalInfo();
+        let globalInfo = this.loadGlobalInfo();
         if (globalInfo && globalInfo[savefileId]) {
-            if (StorageManager.isLocalMode()
-            )
-            {
+            if (StorageManager.isLocalMode()) {
                 return true;
             }
-            else
-            {
-                var savefile = globalInfo[savefileId];
+            else {
+                let savefile = globalInfo[savefileId];
                 return (savefile.globalId === this._globalId &&
                     savefile.title === $dataSystem.gameTitle);
             }
@@ -235,9 +268,9 @@ class DataManager {
     };
 
     static isAnySavefileExists() {
-        var globalInfo = this.loadGlobalInfo();
+        let globalInfo = this.loadGlobalInfo();
         if (globalInfo) {
-            for (var i = 1; i < globalInfo.length; i++) {
+            for (let i = 1; i < globalInfo.length; i++) {
                 if (this.isThisGameFile(i)) {
                     return true;
                 }
@@ -247,11 +280,11 @@ class DataManager {
     };
 
     static latestSavefileId() {
-        var globalInfo = this.loadGlobalInfo();
-        var savefileId = 1;
-        var timestamp = 0;
+        let globalInfo = this.loadGlobalInfo();
+        let savefileId = 1;
+        let timestamp = 0;
         if (globalInfo) {
-            for (var i = 1; i < globalInfo.length; i++) {
+            for (let i = 1; i < globalInfo.length; i++) {
                 if (this.isThisGameFile(i) && globalInfo[i].timestamp > timestamp) {
                     timestamp = globalInfo[i].timestamp;
                     savefileId = i;
@@ -262,11 +295,11 @@ class DataManager {
     };
 
     static loadAllSavefileImages() {
-        var globalInfo = this.loadGlobalInfo();
+        let globalInfo = this.loadGlobalInfo();
         if (globalInfo) {
-            for (var i = 1; i < globalInfo.length; i++) {
+            for (let i = 1; i < globalInfo.length; i++) {
                 if (this.isThisGameFile(i)) {
-                    var info = globalInfo[i];
+                    let info = globalInfo[i];
                     this.loadSavefileImages(info);
                 }
             }
@@ -275,12 +308,12 @@ class DataManager {
 
     static loadSavefileImages(info) {
         if (info.characters) {
-            for (var i = 0; i < info.characters.length; i++) {
+            for (let i = 0; i < info.characters.length; i++) {
                 ImageManager.reserveCharacter(info.characters[i][0]);
             }
         }
         if (info.faces) {
-            for (var j = 0; j < info.faces.length; j++) {
+            for (let j = 0; j < info.faces.length; j++) {
                 ImageManager.reserveFace(info.faces[j][0]);
             }
         }
@@ -315,7 +348,7 @@ class DataManager {
     };
 
     static loadSavefileInfo(savefileId) {
-        var globalInfo = this.loadGlobalInfo();
+        let globalInfo = this.loadGlobalInfo();
         return (globalInfo && globalInfo[savefileId]) ? globalInfo[savefileId] : null;
     };
 
@@ -324,22 +357,22 @@ class DataManager {
     };
 
     static saveGameWithoutRescue(savefileId) {
-        var json = JsonEx.stringify(this.makeSaveContents());
+        let json = JsonEx.stringify(this.makeSaveContents());
         if (json.length >= 200000) {
             console.warn('Save data too big!');
         }
         StorageManager.save(savefileId, json);
         this._lastAccessedId = savefileId;
-        var globalInfo = this.loadGlobalInfo() || [];
+        let globalInfo = this.loadGlobalInfo() || [];
         globalInfo[savefileId] = this.makeSavefileInfo();
         this.saveGlobalInfo(globalInfo);
         return true;
     };
 
     static loadGameWithoutRescue(savefileId) {
-        var globalInfo = this.loadGlobalInfo();
+        let globalInfo = this.loadGlobalInfo();
         if (this.isThisGameFile(savefileId)) {
-            var json = StorageManager.load(savefileId);
+            let json = StorageManager.load(savefileId);
             this.createGameObjects();
             this.extractSaveContents(JsonEx.parse(json));
             this._lastAccessedId = savefileId;
@@ -350,15 +383,15 @@ class DataManager {
     };
 
     static selectSavefileForNewGame() {
-        var globalInfo = this.loadGlobalInfo();
+        let globalInfo = this.loadGlobalInfo();
         this._lastAccessedId = 1;
         if (globalInfo) {
-            var numSavefiles = Math.max(0, globalInfo.length - 1);
+            let numSavefiles = Math.max(0, globalInfo.length - 1);
             if (numSavefiles < this.maxSavefiles()) {
                 this._lastAccessedId = numSavefiles + 1;
             } else {
-                var timestamp = Number.MAX_VALUE;
-                for (var i = 1; i < globalInfo.length; i++) {
+                let timestamp = Number.MAX_VALUE;
+                for (let i = 1; i < globalInfo.length; i++) {
                     if (!globalInfo[i]) {
                         this._lastAccessedId = i;
                         break;
@@ -373,7 +406,7 @@ class DataManager {
     };
 
     static makeSavefileInfo() {
-        var info = {};
+        let info = {};
         info.globalId = this._globalId;
         info.title = $dataSystem.gameTitle;
         info.characters = $gameParty.charactersForSavefile();
@@ -385,7 +418,7 @@ class DataManager {
 
     static makeSaveContents() {
         // A save data does not contain $gameTemp, $gameMessage, and $gameTroop.
-        var contents = {};
+        let contents = {};
         contents.system = $gameSystem;
         contents.screen = $gameScreen;
         contents.timer = $gameTimer;
@@ -413,39 +446,42 @@ class DataManager {
     };
 }
 
-var $dataActors       = null;
-var $dataClasses      = null;
-var $dataSkills       = null;
-var $dataItems        = null;
-var $dataWeapons      = null;
-var $dataArmors       = null;
-var $dataEnemies      = null;
-var $dataTroops       = null;
-var $dataStates       = null;
-var $dataAnimations   = null;
-var $dataTilesets     = null;
-var $dataCommonEvents = null;
-var $dataSystem       = null;
-var $dataMapInfos     = null;
-var $dataMap          = null;
-var $gameTemp         = null;
-var $gameSystem       = null;
-var $gameScreen       = null;
-var $gameTimer        = null;
-var $gameMessage      = null;
-var $gameSwitches     = null;
-var $gameVariables    = null;
-var $gameSelfSwitches = null;
-var $gameActors       = null;
-var $gameParty        = null;
-var $gameTroop        = null;
-var $gameMap          = null;
-var $gamePlayer       = null;
-var $testEvent        = null;
+window.$dataActors       = null;
+window.$dataClasses      = null;
+window.$dataSkills       = null;
+window.$dataItems        = null;
+window.$dataWeapons      = null;
+window.$dataArmors       = null;
+window.$dataEnemies      = null;
+window.$dataTroops       = null;
+window.$dataStates       = null;
+window.$dataAnimations   = null;
+window.$dataTilesets     = null;
+window.$dataCommonEvents = null;
+window.$dataSystem       = null;
+window.$dataMapInfos     = null;
+window.$dataMap          = null;
+window.$gameTemp         = null;
+window.$gameSystem       = null;
+window.$gameScreen       = null;
+window.$gameTimer        = null;
+window.$gameMessage      = null;
+window.$gameSwitches     = null;
+window.$gameVariables    = null;
+window.$gameSelfSwitches = null;
+window.$gameActors       = null;
+window.$gameParty        = null;
+window.$gameTroop        = null;
+window.$gameMap          = null;
+window.$gamePlayer       = null;
+window.$gameObjectives   = null;
+window.$testEvent        = null;
 
 DataManager._globalId = 'RPGMV';
 DataManager._lastAccessedId = 1;
 DataManager._errorUrl = null;
+DataManager._loader = PIXI.loader;
+DataManager._sheetDataLoaded = false;
 
 DataManager._databaseFiles = [
     { name: '$dataActors',       src: 'Actors.json'       },
@@ -461,8 +497,10 @@ DataManager._databaseFiles = [
     { name: '$dataTilesets',     src: 'Tilesets.json'     },
     { name: '$dataCommonEvents', src: 'CommonEvents.json' },
     { name: '$dataSystem',       src: 'System.json'       },
-    { name: '$dataMapInfos',     src: 'MapInfos.json'     }
+    { name: '$dataMapInfos',     src: 'MapInfos.json'     },
 ];
+
+
 //-----------------------------------------------------------------------------
 // ConfigManager
 //
@@ -474,8 +512,8 @@ class ConfigManager {
     }
 
     static load() {
-        var json;
-        var config = {};
+        let json;
+        let config = {};
         try {
             json = StorageManager.load(-1);
         } catch (e) {
@@ -492,7 +530,7 @@ class ConfigManager {
     };
 
     static makeData() {
-        var config = {};
+        let config = {};
         config.alwaysDash = this.alwaysDash;
         config.commandRemember = this.commandRemember;
         config.bgmVolume = this.bgmVolume;
@@ -516,7 +554,7 @@ class ConfigManager {
     };
 
     static readVolume(config, name) {
-        var value = config[name];
+        let value = config[name];
         if (value !== undefined) {
             return Number(value).clamp(0, 100);
         } else {
@@ -613,19 +651,19 @@ class StorageManager {
     static backup(savefileId) {
         if (this.exists(savefileId)) {
             if (this.isLocalMode()) {
-                var data = this.loadFromLocalFile(savefileId);
-                var compressed = LZString.compressToBase64(data);
-                var fs = require('fs');
-                var dirPath = this.localFileDirectoryPath();
-                var filePath = this.localFilePath(savefileId) + ".bak";
+                let data = this.loadFromLocalFile(savefileId);
+                let compressed = LZString.compressToBase64(data);
+                let fs = require('fs');
+                let dirPath = this.localFileDirectoryPath();
+                let filePath = this.localFilePath(savefileId) + ".bak";
                 if (!fs.existsSync(dirPath)) {
                     fs.mkdirSync(dirPath);
                 }
                 fs.writeFileSync(filePath, compressed);
             } else {
-                var data = this.loadFromWebStorage(savefileId);
-                var compressed = LZString.compressToBase64(data);
-                var key = this.webStorageKey(savefileId) + "bak";
+                let data = this.loadFromWebStorage(savefileId);
+                let compressed = LZString.compressToBase64(data);
+                let key = this.webStorageKey(savefileId) + "bak";
                 localStorage.setItem(key, compressed);
             }
         }
@@ -642,12 +680,12 @@ class StorageManager {
     static cleanBackup(savefileId) {
         if (this.backupExists(savefileId)) {
             if (this.isLocalMode()) {
-                var fs = require('fs');
-                var dirPath = this.localFileDirectoryPath();
-                var filePath = this.localFilePath(savefileId);
+                let fs = require('fs');
+                let dirPath = this.localFileDirectoryPath();
+                let filePath = this.localFilePath(savefileId);
                 fs.unlinkSync(filePath + ".bak");
             } else {
-                var key = this.webStorageKey(savefileId);
+                let key = this.webStorageKey(savefileId);
                 localStorage.removeItem(key + "bak");
             }
         }
@@ -656,20 +694,20 @@ class StorageManager {
     static restoreBackup(savefileId) {
         if (this.backupExists(savefileId)) {
             if (this.isLocalMode()) {
-                var data = this.loadFromLocalBackupFile(savefileId);
-                var compressed = LZString.compressToBase64(data);
-                var fs = require('fs');
-                var dirPath = this.localFileDirectoryPath();
-                var filePath = this.localFilePath(savefileId);
+                let data = this.loadFromLocalBackupFile(savefileId);
+                let compressed = LZString.compressToBase64(data);
+                let fs = require('fs');
+                let dirPath = this.localFileDirectoryPath();
+                let filePath = this.localFilePath(savefileId);
                 if (!fs.existsSync(dirPath)) {
                     fs.mkdirSync(dirPath);
                 }
                 fs.writeFileSync(filePath, compressed);
                 fs.unlinkSync(filePath + ".bak");
             } else {
-                var data = this.loadFromWebStorageBackup(savefileId);
-                var compressed = LZString.compressToBase64(data);
-                var key = this.webStorageKey(savefileId);
+                let data = this.loadFromWebStorageBackup(savefileId);
+                let compressed = LZString.compressToBase64(data);
+                let key = this.webStorageKey(savefileId);
                 localStorage.setItem(key, compressed);
                 localStorage.removeItem(key + "bak");
             }
@@ -681,10 +719,10 @@ class StorageManager {
     };
 
     static saveToLocalFile(savefileId, json) {
-        var data = LZString.compressToBase64(json);
-        var fs = require('fs');
-        var dirPath = this.localFileDirectoryPath();
-        var filePath = this.localFilePath(savefileId);
+        let data = LZString.compressToBase64(json);
+        let fs = require('fs');
+        let dirPath = this.localFileDirectoryPath();
+        let filePath = this.localFilePath(savefileId);
         if (!fs.existsSync(dirPath)) {
             fs.mkdirSync(dirPath);
         }
@@ -692,9 +730,9 @@ class StorageManager {
     };
 
     static loadFromLocalFile(savefileId) {
-        var data = null;
-        var fs = require('fs');
-        var filePath = this.localFilePath(savefileId);
+        let data = null;
+        let fs = require('fs');
+        let filePath = this.localFilePath(savefileId);
         if (fs.existsSync(filePath)) {
             data = fs.readFileSync(filePath, {encoding: 'utf8'});
         }
@@ -702,9 +740,9 @@ class StorageManager {
     };
 
     static loadFromLocalBackupFile(savefileId) {
-        var data = null;
-        var fs = require('fs');
-        var filePath = this.localFilePath(savefileId) + ".bak";
+        let data = null;
+        let fs = require('fs');
+        let filePath = this.localFilePath(savefileId) + ".bak";
         if (fs.existsSync(filePath)) {
             data = fs.readFileSync(filePath, {encoding: 'utf8'});
         }
@@ -712,65 +750,65 @@ class StorageManager {
     };
 
     static localFileBackupExists(savefileId) {
-        var fs = require('fs');
+        let fs = require('fs');
         return fs.existsSync(this.localFilePath(savefileId) + ".bak");
     };
 
     static localFileExists(savefileId) {
-        var fs = require('fs');
+        let fs = require('fs');
         return fs.existsSync(this.localFilePath(savefileId));
     };
 
     static removeLocalFile(savefileId) {
-        var fs = require('fs');
-        var filePath = this.localFilePath(savefileId);
+        let fs = require('fs');
+        let filePath = this.localFilePath(savefileId);
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
     };
 
     static saveToWebStorage(savefileId, json) {
-        var key = this.webStorageKey(savefileId);
-        var data = LZString.compressToBase64(json);
+        let key = this.webStorageKey(savefileId);
+        let data = LZString.compressToBase64(json);
         localStorage.setItem(key, data);
     };
 
     static loadFromWebStorage(savefileId) {
-        var key = this.webStorageKey(savefileId);
-        var data = localStorage.getItem(key);
+        let key = this.webStorageKey(savefileId);
+        let data = localStorage.getItem(key);
         return LZString.decompressFromBase64(data);
     };
 
     static loadFromWebStorageBackup(savefileId) {
-        var key = this.webStorageKey(savefileId) + "bak";
-        var data = localStorage.getItem(key);
+        let key = this.webStorageKey(savefileId) + "bak";
+        let data = localStorage.getItem(key);
         return LZString.decompressFromBase64(data);
     };
 
     static webStorageBackupExists(savefileId) {
-        var key = this.webStorageKey(savefileId) + "bak";
+        let key = this.webStorageKey(savefileId) + "bak";
         return !!localStorage.getItem(key);
     };
 
     static webStorageExists(savefileId) {
-        var key = this.webStorageKey(savefileId);
+        let key = this.webStorageKey(savefileId);
         return !!localStorage.getItem(key);
     };
 
     static removeWebStorage(savefileId) {
-        var key = this.webStorageKey(savefileId);
+        let key = this.webStorageKey(savefileId);
         localStorage.removeItem(key);
     };
 
     static localFileDirectoryPath() {
-        var path = require('path');
+        let path = require('path');
 
-        var base = path.dirname(process.mainModule.filename);
+        let base = path.dirname(process.mainModule.filename);
         return path.join(base, 'save/');
     };
 
     static localFilePath(savefileId) {
-        var name;
+        let name;
         if (savefileId < 0) {
             name = 'config.rpgsave';
         } else if (savefileId === 0) {
@@ -865,8 +903,8 @@ class ImageManager {
 
     static loadBitmap(folder, filename, hue, smooth) {
         if (filename) {
-            var path = folder + encodeURIComponent(filename) + '.png';
-            var bitmap = this.loadNormalBitmap(path, hue || 0);
+            let path = folder + encodeURIComponent(filename) + '.png';
+            let bitmap = this.loadNormalBitmap(path, hue || 0);
             bitmap.smooth = smooth;
             return bitmap;
         } else {
@@ -875,7 +913,7 @@ class ImageManager {
     };
 
     static loadEmptyBitmap() {
-        var empty = this._imageCache.get('empty');
+        let empty = this._imageCache.get('empty');
         if (!empty) {
             empty = new Bitmap();
             this._imageCache.add('empty', empty);
@@ -886,8 +924,8 @@ class ImageManager {
     };
 
     static loadNormalBitmap(path, hue) {
-        var key = this._generateCacheKey(path, hue);
-        var bitmap = this._imageCache.get(key);
+        let key = this._generateCacheKey(path, hue);
+        let bitmap = this._imageCache.get(key);
         if (!bitmap) {
             bitmap = Bitmap.load(path);
             bitmap.addLoadListener(function () {
@@ -910,12 +948,12 @@ class ImageManager {
     };
 
     static isObjectCharacter(filename) {
-        var sign = filename.match(/^[\!\$]+/);
+        let sign = filename.match(/^[\!\$]+/);
         return sign && sign[0].contains('!');
     };
 
     static isBigCharacter(filename) {
-        var sign = filename.match(/^[\!\$]+/);
+        let sign = filename.match(/^[\!\$]+/);
         return sign && sign[0].contains('$');
     };
 
@@ -981,8 +1019,8 @@ class ImageManager {
 
     static reserveBitmap(folder, filename, hue, smooth, reservationId) {
         if (filename) {
-            var path = folder + encodeURIComponent(filename) + '.png';
-            var bitmap = this.reserveNormalBitmap(path, hue || 0, reservationId || this._defaultReservationId);
+            let path = folder + encodeURIComponent(filename) + '.png';
+            let bitmap = this.reserveNormalBitmap(path, hue || 0, reservationId || this._defaultReservationId);
             bitmap.smooth = smooth;
             return bitmap;
         } else {
@@ -991,7 +1029,7 @@ class ImageManager {
     };
 
     static reserveNormalBitmap(path, hue, reservationId) {
-        var bitmap = this.loadNormalBitmap(path, hue);
+        let bitmap = this.loadNormalBitmap(path, hue);
         this._imageCache.reserve(this._generateCacheKey(path, hue), bitmap, reservationId);
 
         return bitmap;
@@ -1004,7 +1042,6 @@ class ImageManager {
     static setDefaultReservationId(reservationId) {
         this._defaultReservationId = reservationId;
     };
-
 
     static requestAnimation(filename, hue) {
         return this.requestBitmap('img/animations/', filename, hue, true);
@@ -1064,8 +1101,8 @@ class ImageManager {
 
     static requestBitmap(folder, filename, hue, smooth) {
         if (filename) {
-            var path = folder + encodeURIComponent(filename) + '.png';
-            var bitmap = this.requestNormalBitmap(path, hue || 0);
+            let path = folder + encodeURIComponent(filename) + '.png';
+            let bitmap = this.requestNormalBitmap(path, hue || 0);
             bitmap.smooth = smooth;
             return bitmap;
         } else {
@@ -1074,8 +1111,8 @@ class ImageManager {
     };
 
     static requestNormalBitmap(path, hue) {
-        var key = this._generateCacheKey(path, hue);
-        var bitmap = this._imageCache.get(key);
+        let key = this._generateCacheKey(path, hue);
+        let bitmap = this._imageCache.get(key);
         if (!bitmap) {
             bitmap = Bitmap.request(path);
             bitmap.addLoadListener(function () {
@@ -1097,6 +1134,10 @@ class ImageManager {
     static clearRequest() {
         this._requestQueue.clear();
     };
+
+    static freeBattleTexture() {
+        Sprite_BaseSquare.destroyBaseTexture();
+    }
 }
 
 ImageManager.cache = new CacheMap(ImageManager);
@@ -1137,8 +1178,8 @@ class AudioManager {
     };
 
     static playEncryptedBgm(bgm, pos) {
-        var ext = this.audioFileExt();
-        var url = this._path + 'bgm/' + encodeURIComponent(bgm.name) + ext;
+        let ext = this.audioFileExt();
+        let url = this._path + 'bgm/' + encodeURIComponent(bgm.name) + ext;
         url = Decrypter.extToEncryptExt(url);
         Decrypter.decryptHTML5Audio(url, bgm, pos);
     };
@@ -1309,7 +1350,7 @@ class AudioManager {
             this._seBuffers = this._seBuffers.filter(function (audio) {
                 return audio.isPlaying();
             });
-            var buffer = this.createBuffer('se', se.name);
+            let buffer = this.createBuffer('se', se.name);
             this.updateSeParameters(buffer, se);
             buffer.play(false);
             this._seBuffers.push(buffer);
@@ -1330,8 +1371,8 @@ class AudioManager {
     static playStaticSe(se) {
         if (se.name) {
             this.loadStaticSe(se);
-            for (var i = 0; i < this._staticBuffers.length; i++) {
-                var buffer = this._staticBuffers[i];
+            for (let i = 0; i < this._staticBuffers.length; i++) {
+                let buffer = this._staticBuffers[i];
                 if (buffer._reservedSeName === se.name) {
                     buffer.stop();
                     this.updateSeParameters(buffer, se);
@@ -1344,7 +1385,7 @@ class AudioManager {
 
     static loadStaticSe(se) {
         if (se.name && !this.isStaticSe(se)) {
-            var buffer = this.createBuffer('se', se.name);
+            let buffer = this.createBuffer('se', se.name);
             buffer._reservedSeName = se.name;
             this._staticBuffers.push(buffer);
             if (this.shouldUseHtml5Audio()) {
@@ -1354,8 +1395,8 @@ class AudioManager {
     };
 
     static isStaticSe(se) {
-        for (var i = 0; i < this._staticBuffers.length; i++) {
-            var buffer = this._staticBuffers[i];
+        for (let i = 0; i < this._staticBuffers.length; i++) {
+            let buffer = this._staticBuffers[i];
             if (buffer._reservedSeName === se.name) {
                 return true;
             }
@@ -1372,7 +1413,7 @@ class AudioManager {
 
     static saveBgm() {
         if (this._currentBgm) {
-            var bgm = this._currentBgm;
+            let bgm = this._currentBgm;
             return {
                 name: bgm.name,
                 volume: bgm.volume,
@@ -1387,7 +1428,7 @@ class AudioManager {
 
     static saveBgs() {
         if (this._currentBgs) {
-            var bgs = this._currentBgs;
+            let bgs = this._currentBgs;
             return {
                 name: bgs.name,
                 volume: bgs.volume,
@@ -1405,8 +1446,8 @@ class AudioManager {
     };
 
     static createBuffer(folder, name) {
-        var ext = this.audioFileExt();
-        var url = this._path + folder + '/' + encodeURIComponent(name) + ext;
+        let ext = this.audioFileExt();
+        let url = this._path + folder + '/' + encodeURIComponent(name) + ext;
         if (this.shouldUseHtml5Audio() && folder === 'bgm') {
             if (this._blobUrl) Html5Audio.setup(this._blobUrl);
             else Html5Audio.setup(url);
@@ -1820,7 +1861,7 @@ class SceneManager {
     };
 
     static initGraphics() {
-        var type = this.preferableRendererType();
+        let type = this.preferableRendererType();
         Graphics.initialize(this._screenWidth, this._screenHeight, type);
         Graphics.boxWidth = this._boxWidth;
         Graphics.boxHeight = this._boxHeight;
@@ -1860,7 +1901,7 @@ class SceneManager {
     };
 
     static initAudio() {
-        var noAudio = Utils.isOptionValid('noaudio');
+        let noAudio = Utils.isOptionValid('noaudio');
         if (!WebAudio.initialize(noAudio) && !noAudio) {
             throw new Error('Your browser does not support Web Audio API.');
         }
@@ -1873,10 +1914,10 @@ class SceneManager {
 
     static initNwjs() {
         if (Utils.isNwjs()) {
-            var win = nw.Window.get();
+            let win = nw.Window.get();
             if (process.platform === 'darwin' && !win.menu) {
-                var menubar = new nw.Menu({type: 'menubar'});
-                var option = {hideEdit: true, hideWindow: true};
+                let menubar = new nw.Menu({type: 'menubar'});
+                let option = {hideEdit: true, hideWindow: true};
                 menubar.createMacBuiltin('Game', option);
                 win.menu = menubar;
             }
@@ -1973,8 +2014,8 @@ class SceneManager {
             this.changeScene();
             this.updateScene();
         } else {
-            var newTime = this._getTimeInMsWithoutMobileSafari();
-            var fTime = (newTime - this._currentTime) / 1000;
+            let newTime = this._getTimeInMsWithoutMobileSafari();
+            let fTime = (newTime - this._currentTime) / 1000;
             if (fTime > 0.25) fTime = 0.25;
             this._currentTime = newTime;
             this._accumulator += fTime;
@@ -1996,17 +2037,24 @@ class SceneManager {
     static changeScene() {
         if (this.isSceneChanging() && !this.isCurrentSceneBusy()) {
             if (this._scene) {
-                this._scene.terminate();
-                this._scene.detachReservation();
+                if (this._stack.length === 0 || this._scene.isGUI()) {
+                    this._scene.terminate();
+                    this._scene.detachReservation();
+                }
                 this._previousClass = this._scene.constructor;
             }
             this._scene = this._nextScene;
             if (this._scene) {
-                this._scene.attachReservation();
-                this._scene.create();
-                this._nextScene = null;
-                this._sceneStarted = false;
-                this.onSceneCreate();
+                if (this._scene.isReserved()) {
+                    this._scene.resume();
+                    this._nextScene = null;
+                } else {
+                    this._scene.attachReservation();
+                    this._scene.create();
+                    this._nextScene = null;
+                    this._sceneStarted = false;
+                    this.onSceneCreate();
+                }
             }
             if (this._exiting) {
                 this.terminate();
@@ -2076,14 +2124,23 @@ class SceneManager {
         }
     };
 
+    static gotoPreviousScene(scene) {
+        if (scene) {
+            this._nextScene = scene;
+        }
+        if (this._scene) {
+            this._scene.stop();
+        }
+    }
+
     static push(sceneClass) {
-        this._stack.push(this._scene.constructor);
+        this._stack.push(this._scene);
         this.goto(sceneClass);
     };
 
     static pop() {
         if (this._stack.length > 0) {
-            this.goto(this._stack.pop());
+            this.gotoPreviousScene(this._stack.pop());
         } else {
             this.exit();
         }
@@ -2115,7 +2172,7 @@ class SceneManager {
         this._backgroundBitmap.blur();
     };
 
-    static backgroundBitmap() {
+    static get backgroundBitmap() {
         return this._backgroundBitmap;
     };
 
@@ -2129,10 +2186,6 @@ class SceneManager {
     };
 }
 
-/*
- * Gets the current time in ms without on iOS Safari.
- * @private
- */
 SceneManager._scene             = null;
 SceneManager._nextScene         = null;
 SceneManager._stack             = [];
@@ -2141,11 +2194,15 @@ SceneManager._sceneStarted      = false;
 SceneManager._exiting           = false;
 SceneManager._previousClass     = null;
 SceneManager._backgroundBitmap  = null;
-SceneManager._screenWidth       = 816;
-SceneManager._screenHeight      = 624;
-SceneManager._boxWidth          = 816;
-SceneManager._boxHeight         = 624;
+SceneManager._screenWidth       = 816; // Yanfly
+SceneManager._screenHeight      = 624; // Yanfly
+SceneManager._boxWidth          = 816; // Yanfly
+SceneManager._boxHeight         = 624; // Yanfly
 SceneManager._deltaTime = 1.0 / 60.0;
+/*
+ * Gets the current time in ms without on iOS Safari.
+ * @private
+ */
 if (!Utils.isMobileSafari()) SceneManager._currentTime = SceneManager._getTimeInMsWithoutMobileSafari();
 SceneManager._accumulator = 0.0;
 SceneManager.snaptime = 0;
@@ -2166,6 +2223,7 @@ class BattleManager {
         $gameTroop.setup(troopId);
         $gameScreen.onBattleStart();
         this.makeEscapeRatio();
+        ProjectileManager.start();
     };
 
     static initMembers() {
@@ -2185,8 +2243,8 @@ class BattleManager {
         this._action = null;
         this._targets = [];
         this._logWindow = null;
-        this._statusWindow = null;
-        this._targetBar = null;
+        this._playerBars = null;
+        this._enemyBars = null;
         this._spriteset = null;
         this._escapeRatio = 0;
         this._escaped = false;
@@ -2210,12 +2268,12 @@ class BattleManager {
         this._logWindow = logWindow;
     };
 
-    static setStatusWindow(statusWindow) {
-        this._statusWindow = statusWindow;
+    static setPlayerBars(playerBars) {
+        this._playerBars = playerBars;
     };
 
-    static setTargetBar(targetBar) {
-        this._targetBar= targetBar;
+    static setEnemyBars(enemyBars) {
+        this._enemyBars = enemyBars;
     };
 
     static setSpriteset(spriteset) {
@@ -2288,6 +2346,7 @@ class BattleManager {
                     break;
             }
         }
+        ProjectileManager.update();
     };
 
     static updateEvent() {
@@ -2368,9 +2427,9 @@ class BattleManager {
     };
 
     static changeActor(newActorIndex, lastActorActionState) {
-        var lastActor = this.actor();
+        let lastActor = this.actor();
         this._actorIndex = newActorIndex;
-        var newActor = this.actor();
+        let newActor = this.actor();
         if (lastActor) {
             lastActor.setActionState(lastActorActionState);
         }
@@ -2384,19 +2443,7 @@ class BattleManager {
         $gameSystem.onBattleStart();
         $gameParty.onBattleStart();
         $gameTroop.onBattleStart();
-        if (!SceneManager.isPreviousScene(Scene_Menu)) {
-            this.displayStartMessages();
-        }
-    };
-
-    static continueBattle() {
-        $gameSystem.onBattleStart();
-        $gameParty.onBattleContinue();
-        $gameTroop.onBattleContinue();
-        if (this._phase === 'input') {
-            $gameParty.makeActions();
-            $gameTroop.makeActions();
-        }
+        //this.displayStartMessages();
     };
 
     static displayStartMessages() {
@@ -2414,7 +2461,7 @@ class BattleManager {
         this._phase = 'input';
         $gameParty.makeActions();
         $gameTroop.makeActions();
-        this.clearActor();
+        this.refreshStatus();
         if (this._surprise || !$gameParty.canInput()) {
             this.startTurn();
         }
@@ -2448,14 +2495,9 @@ class BattleManager {
     };
 
     static refreshStatus() {
-        this._statusWindow.refresh();
-        this._targetBar.refresh();
+        this._playerBars.refresh();
+        this._enemyBars.refresh();
     };
-
-    static updateStatusBar(battler) {
-        this._targetBar.updateBattler(battler);
-        this._targetBar.refresh();
-    }
 
     static startTurn() {
         this._phase = 'turn';
@@ -2479,8 +2521,8 @@ class BattleManager {
     };
 
     static processTurn() {
-        var subject = this._subject;
-        var action = subject.currentAction();
+        let subject = this._subject;
+        let action = subject.currentAction();
         if (action) {
             action.prepare();
             if (action.isValid()) {
@@ -2522,7 +2564,7 @@ class BattleManager {
 
     static getNextSubject() {
         for (;;) {
-            var battler = this._actionBattlers.shift();
+            let battler = this._actionBattlers.shift();
             if (!battler) {
                 return null;
             }
@@ -2537,7 +2579,7 @@ class BattleManager {
     };
 
     static makeActionOrders() {
-        var battlers = [];
+        let battlers = [];
         if (!this._surprise) {
             battlers = battlers.concat($gameParty.members());
         }
@@ -2554,9 +2596,9 @@ class BattleManager {
     };
 
     static startAction() {
-        var subject = this._subject;
-        var action = subject.currentAction();
-        var targets = action.makeTargets();
+        let subject = this._subject;
+        let action = subject.currentAction();
+        let targets = action.makeTargets();
         this._phase = 'action';
         this._action = action;
         this._targets = targets;
@@ -2566,8 +2608,22 @@ class BattleManager {
         this._logWindow.startAction(subject, action, targets);
     };
 
+    static targetHomePosition() {
+        let target = this._targets[0];
+        if (!!target) {
+            return [target._homeX, target._homeY];
+        }
+    }
+
+    static targetMeasurements() {
+        let target = this._targets[0];
+        if (!!target) {
+            return [target._width, target._height];
+        }
+    }
+
     static updateAction() {
-        var target = this._targets.shift();
+        let target = this._targets.shift();
         if (target) {
             this.invokeAction(this._subject, target);
         } else {
@@ -2595,13 +2651,13 @@ class BattleManager {
     };
 
     static invokeNormalAction(subject, target) {
-        var realTarget = this.applySubstitute(target);
+        let realTarget = this.applySubstitute(target);
         this._action.apply(realTarget);
         this._logWindow.displayActionResults(subject, realTarget);
     };
 
     static invokeCounterAttack(subject, target) {
-        var action = new Game_Action(target);
+        let action = new Game_Action(target);
         action.setAttack();
         action.apply(subject);
         this._logWindow.displayCounter(target);
@@ -2617,7 +2673,7 @@ class BattleManager {
 
     static applySubstitute(target) {
         if (this.checkSubstitute(target)) {
-            var substitute = target.friendsUnit().substituteBattler();
+            let substitute = target.friendsUnit().substituteBattler();
             if (substitute && target !== substitute) {
                 this._logWindow.displaySubstitute(substitute, target);
                 return substitute;
@@ -2636,7 +2692,7 @@ class BattleManager {
 
     static forceAction(battler) {
         this._actionForcedBattler = battler;
-        var index = this._actionBattlers.indexOf(battler);
+        let index = this._actionBattlers.indexOf(battler);
         if (index >= 0) {
             this._actionBattlers.splice(index, 1);
         }
@@ -2703,7 +2759,7 @@ class BattleManager {
     static processEscape() {
         $gameParty.performEscape();
         SoundManager.playEscape();
-        var success = this._preemptive ? true : (Math.random() < this._escapeRatio);
+        let success = this._preemptive ? true : (Math.random() < this._escapeRatio);
         if (success) {
             this.displayEscapeSuccessMessage();
             this._escaped = true;
@@ -2753,13 +2809,15 @@ class BattleManager {
         } else if (!this._escaped && $gameParty.isAllDead()) {
             if (this._canLose) {
                 $gameParty.reviveBattleMembers();
-                SceneManager.pop();
+                SceneManager.goto(Scene_Map);
             } else {
                 SceneManager.goto(Scene_Gameover);
             }
         } else {
-            SceneManager.pop();
+            SceneManager.goto(Scene_Map);
         }
+        ProjectileManager.stop();
+        ImageManager.freeBattleTexture();
         this._phase = null;
     };
 
@@ -2794,22 +2852,22 @@ class BattleManager {
     };
 
     static displayExp() {
-        var exp = this._rewards.exp;
+        let exp = this._rewards.exp;
         if (exp > 0) {
-            var text = TextManager.obtainExp.format(exp, TextManager.exp);
+            let text = TextManager.obtainExp.format(exp, TextManager.exp);
             $gameMessage.add('\\.' + text);
         }
     };
 
     static displayGold() {
-        var gold = this._rewards.gold;
+        let gold = this._rewards.gold;
         if (gold > 0) {
             $gameMessage.add('\\.' + TextManager.obtainGold.format(gold));
         }
     };
 
     static displayDropItems() {
-        var items = this._rewards.items;
+        let items = this._rewards.items;
         if (items.length > 0) {
             $gameMessage.newPage();
             items.forEach(function(item) {
@@ -2825,7 +2883,7 @@ class BattleManager {
     };
 
     static gainExp() {
-        var exp = this._rewards.exp;
+        let exp = this._rewards.exp;
         $gameParty.allMembers().forEach(function(actor) {
             actor.gainExp(exp);
         });
@@ -2836,7 +2894,7 @@ class BattleManager {
     };
 
     static gainDropItems() {
-        var items = this._rewards.items;
+        let items = this._rewards.items;
         items.forEach(function(item) {
             $gameParty.gainItem(item, 1);
         });
@@ -2864,7 +2922,7 @@ class PluginManager {
     };
 
     static checkErrors() {
-        var url = this._errorUrls.shift();
+        let url = this._errorUrls.shift();
         if (url) {
             throw new Error('Failed to load: ' + url);
         }
@@ -2879,8 +2937,8 @@ class PluginManager {
     };
 
     static loadScript(name) {
-        var url = this._path + name;
-        var script = document.createElement('script');
+        let url = this._path + name;
+        let script = document.createElement('script');
         script.type = 'text/javascript';
         script.src = url;
         script.async = false;
@@ -2899,3 +2957,206 @@ PluginManager._scripts      = [];
 PluginManager._errorUrls    = [];
 PluginManager._parameters   = {};
 
+//-----------------------------------------------------------------------------
+// PhysicManager
+//
+// The static class that manages physics.
+class Physics {
+    constructor() {
+        throw new Error('This is a static class');
+    }
+
+    static checkCollision(sprite1, sprite2) {
+        let combinedHalfWidths, combinedHalfHeights, dx, dy;
+        r1.centerX = r1.x + r1.width / 2;
+        r1.centerY = r1.y + r1.height / 2;
+        r2.centerX = r2.x + r2.width / 2;
+        r2.centerY = r2.y + r2.height / 2;
+
+        dx = r1.centerX - r2.centerX;
+        dy = r1.centerY - r2.centerY;
+
+        combinedHalfWidths = (r1.width + r2.width)/2;
+        combinedHalfHeights = (r1.height + r2.height)/2;
+
+        return (Math.abs(dx) < combinedHalfWidths && Math.abs(dy) < combinedHalfHeights);
+    }
+
+    static isSpriteCollided(s1, s2) {
+        let combinedHalfWidths, combinedHalfHeights, dx, dy;
+        s1.centerX = s1.x + s1.cellWidth / 2;
+        s1.centerY = s1.y + s1.cellHeight / 2;
+        s2.centerX = s2.x + s2.width / 2;
+        s2.centerY = s2.y + s2.height / 2;
+
+        dx = s1.centerX - s2.centerX;
+        dy = s1.centerY - s2.centerY;
+
+        combinedHalfWidths = (s1.cellWidth + s2.width)/2;
+        combinedHalfHeights = (s1.cellHeight + s2.height)/2;
+
+        return (Math.abs(dx) < combinedHalfWidths && Math.abs(dy) < combinedHalfHeights);
+    }
+
+    static contain(child, parent) {
+        let collision = false;
+
+        //Left
+        if (child.x < parent.x) {
+            child.x = parent.x;
+            collision = "left";
+        }
+
+        //Top
+        if (child.y < parent.y) {
+            child.y = parent.y;
+            collision = "top";
+        }
+
+        //Right
+        if (child.x + child.width > parent.width) {
+            child.x = parent.width - child.width;
+            collision = "right";
+        }
+
+        //Bottom
+        if (child.y + child.height > parent.height) {
+            child.y = parent.height - child.height;
+            collision = "bottom";
+        }
+
+        //Return the `collision` value
+        return collision;
+    }
+
+    static update() {
+        //this.updateProjectile();
+    }
+
+    static updateProjectile() {
+        ProjectileManager.update();
+    }
+}
+
+class ProjectileManager {
+    constructor() {
+        throw new Error('This is a static class');
+    }
+
+    static update() {
+        if (this.active) {
+            if (this.isInProgress()) {
+                this._list.forEach(function (child) {
+                    if (child.update) {
+                        child.update();
+                    }
+                    if (child._needsGC) {
+                        ProjectileManager.terminateProjectile(child);
+                    }
+                });
+            }
+        }
+    }
+
+    static add(proj, x, y, duration) {
+        proj.setTarget(x, y, duration);
+        proj.start();
+        this._list.push(proj);
+    }
+
+    static terminateProjectile(proj) {
+        proj.terminate();
+        let index = this._list.indexOf(proj);
+        if (index > -1) {
+            this._list.splice(index, 1);
+        }
+    }
+
+    static actor() {
+        return BattleManager.actor();
+    }
+
+    static start() {
+        this.active = true;
+    }
+
+    static stop() {
+        this.active = false;
+    }
+
+    static isInProgress() {
+        return this._list.length > 0;
+    }
+}
+
+ProjectileManager.active = false;
+ProjectileManager._list = [];
+
+class ColorManager {
+    constructor() {
+        throw new Error('This is a static class!');
+    }
+
+    static update() {
+        if (this.active) {
+            if (this.progress <= 1 && this.duration > 0) {
+                this.updateColorTransition()
+            } else if (this.progress > 1) {
+                this.onTransitionComplete();
+                if (!!this.cb) {
+                    this.cb();
+                }
+            }
+        }
+    }
+
+    static getColor(id) {
+        let arr = $dataColors[id];
+        return new Color(arr[0], arr[1], arr[2]);
+    }
+
+    static start() {
+        this.active = true;
+    }
+
+    static stop() {
+        this.active = false;
+    }
+
+    static updateColorTransition() {
+        this._currentColor = Color.lerp(this._previousColor, this._nextColor, this.progress);
+        this.progress += 1/ this.duration;
+    }
+
+    static onTransitionComplete() {
+        this.duration = 0;
+        this.progress = 0;
+    }
+
+    static setTransition(colorA, colorB, duration, cb) {
+        this._previousColor = colorA;
+        this._nextColor = colorB;
+        this.duration = duration || 0;
+        this.cb = cb || null;
+    }
+
+    static isActive() {
+        return this.active;
+    }
+
+    static isInProgress() {
+        return this.isActive() && this.progress > 0;
+    }
+
+    static get currentColor() {
+        return this._currentColor;
+    }
+}
+
+ColorManager.progress = 0;
+ColorManager.duration = 0;
+ColorManager._currentColor = null;
+ColorManager._previousColor = null;
+ColorManager._nextColor = null;
+ColorManager.cb = null;
+ColorManager.active = false;

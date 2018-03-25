@@ -4,14 +4,12 @@
 
 'use strict';
 
-PluginManager.setup($plugins);
-
 (function checkTest(){
-    var href = location.href;
-    var query = /\?test/;
-    if (href.search(query) < 0) {
-        var test = window.confirm('Initialize test?');
-        var btest = window.confirm('Go to battle test?');
+    let href = location.href;
+    let query = /\?test/;
+    if (href.search(query) === -1) {
+        let test = window.confirm('Initialize test?');
+        let btest = window.confirm('Go to battle test?');
         if (test) {
             history.replaceState(null, '', href + '?test');
         }
@@ -20,6 +18,8 @@ PluginManager.setup($plugins);
         }
     }
 })();
+
+PluginManager.setup($plugins);
 
 window.onload = function() {
     SceneManager.run(Scene_Boot);

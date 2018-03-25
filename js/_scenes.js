@@ -1,5 +1,5 @@
 //=============================================================================
-// rpg_scenes.js v1.5.1
+// _scenes.js
 //=============================================================================
 
 'use strict';
@@ -13,7 +13,7 @@
  * @constructor
  * @extends Stage
  */
-class Scene_Base extends Stage {
+class Scene_Base extends PIXI.display.Stage {
     /**
      * Create a instance of Scene_Base.
      *
@@ -23,6 +23,7 @@ class Scene_Base extends Stage {
     constructor() {
         super();
         this._active = false;
+        this._reserved = false;
         this._fadeSign = 0;
         this._fadeDuration = 0;
         this._fadeSprite = null;
@@ -51,6 +52,10 @@ class Scene_Base extends Stage {
         ImageManager.releaseReservation(this._imageReservationId);
     };
 
+    reservedForGUI() {
+        this._reserved = true;
+    }
+
     /**
      * Create the components and add them to the rendering process.
      *
@@ -60,6 +65,13 @@ class Scene_Base extends Stage {
      */
     create() {
     };
+
+    createWhiteBackground() {
+        this._background = new ScreenSprite();
+        this._background.setWhite();
+        this._background.alpha = 1;
+        this.addChild(this._background);
+    }
 
     /**
      * Returns whether the scene is active or not.
@@ -86,6 +98,30 @@ class Scene_Base extends Stage {
     };
 
     /**
+     * Return whether the scene is a pop-up or not.
+     *
+     * @method isGUI
+     * @instance
+     * @memberof Scene_Base
+     * @return {Boolean} Return true if it is a pop-up
+     */
+    isGUI() {
+        return false;
+    };
+
+    /**
+     * Return whether the scene is reserved or not.
+     *
+     * @method isReserved
+     * @instance
+     * @memberof Scene_Base
+     * @return {Boolean} Return true if it is reserved.
+     */
+    isReserved() {
+        return this._reserved;
+    }
+
+    /**
      * Start the scene processing.
      *
      * @method start
@@ -95,6 +131,17 @@ class Scene_Base extends Stage {
     start() {
         this._active = true;
     };
+
+    /**
+     * Continue the scene processing.
+     *
+     * @method continue
+     * @instance
+     * @memberof Scene_Base
+     */
+    resume() {
+        this._active = true;
+    }
 
     /**
      * Update the scene processing each new frame.
@@ -118,7 +165,6 @@ class Scene_Base extends Stage {
     stop() {
         this._active = false;
     };
-
 
     /**
      * Return whether the scene is busy or not.
@@ -151,10 +197,10 @@ class Scene_Base extends Stage {
      * @memberof Scene_Base
      */
     createWindowLayer() {
-        var width = Graphics.boxWidth;
-        var height = Graphics.boxHeight;
-        var x = (Graphics.width - width) / 2;
-        var y = (Graphics.height - height) / 2;
+        let width = Graphics.boxWidth;
+        let height = Graphics.boxHeight;
+        let x = (Graphics.width - width) / 2;
+        let y = (Graphics.height - height) / 2;
         this._windowLayer = new WindowLayer();
         this._windowLayer.move(x, y, width, height);
         this.addChild(this._windowLayer);
@@ -234,7 +280,7 @@ class Scene_Base extends Stage {
      */
     updateFade() {
         if (this._fadeDuration > 0) {
-            var d = this._fadeDuration;
+            let d = this._fadeDuration;
             if (this._fadeSign > 0) {
                 this._fadeSprite.opacity -= this._fadeSprite.opacity / d;
             } else {
@@ -292,7 +338,7 @@ class Scene_Base extends Stage {
      * @memberof Scene_Base
      */
     fadeOutAll() {
-        var time = this.slowFadeSpeed() / 60;
+        let time = this.slowFadeSpeed() / 60;
         AudioManager.fadeOutBgm(time);
         AudioManager.fadeOutBgs(time);
         AudioManager.fadeOutMe(time);
@@ -332,11 +378,7 @@ class Scene_Base extends Stage {
 class Scene_Boot extends Scene_Base {
     constructor() {
         super();
-        this.init();
         this._startDate = Date.now();
-    }
-
-    init() {
     }
 
     create() {
@@ -375,7 +417,7 @@ class Scene_Boot extends Scene_Base {
         if (Graphics.isFontLoaded('GameFont')) {
             return true;
         } else if (!Graphics.canUseCssFontLoading()) {
-            var elapsed = Date.now() - this._startDate;
+            let elapsed = Date.now() - this._startDate;
             if (elapsed >= 60000) {
                 throw new Error('Failed to load GameFont');
             }
@@ -395,7 +437,7 @@ class Scene_Boot extends Scene_Base {
             this.checkPlayerLocation();
             DataManager.setupNewGame();
             SceneManager.goto(Scene_Title);
-            Window_TitleCommand.initCommandPosition();
+            Window_StartMenu.initCommandPosition();
         }
         this.updateDocumentTitle();
     };
@@ -438,12 +480,15 @@ class Scene_Title extends Scene_Base {
         this.startFadeIn(this.fadeSpeed(), false);
     };
 
-    update() {
-        if (!this.isBusy()) {
-            this._commandWindow.open();
-        }
-        super.update();
-    };
+    resume() {
+        super.resume();
+        this._commandWindow.show();
+    }
+
+    stop() {
+        super.stop();
+        SceneManager.snapForBackground();
+    }
 
     isBusy() {
         return this._commandWindow.isClosing() || super.isBusy();
@@ -470,10 +515,10 @@ class Scene_Title extends Scene_Base {
     };
 
     drawGameTitle() {
-        var x = 20;
-        var y = Graphics.height / 4;
-        var maxWidth = Graphics.width - x * 2;
-        var text = $dataSystem.gameTitle;
+        let x = 20;
+        let y = Graphics.height / 4;
+        let maxWidth = Graphics.width - x * 2;
+        let text = $dataSystem.gameTitle;
         this._gameTitleSprite.bitmap.outlineColor = 'black';
         this._gameTitleSprite.bitmap.outlineWidth = 8;
         this._gameTitleSprite.bitmap.fontSize = 72;
@@ -488,12 +533,14 @@ class Scene_Title extends Scene_Base {
     };
 
     createCommandWindow() {
-        this._commandWindow = new Window_TitleCommand();
+        this._commandWindow = new Window_StartMenu();
         this._commandWindow.setHandler('newGame', this.commandNewGame.bind(this));
         this._commandWindow.setHandler('continue', this.commandContinue.bind(this));
         this._commandWindow.setHandler('options', this.commandOptions.bind(this));
         this._commandWindow.setHandler('exit', this.commandExit.bind(this));
+        this._commandWindow.setHandler('edit', this.commandEditMode.bind(this));
         this.addWindow(this._commandWindow);
+        this._commandWindow.open();
     };
 
     commandNewGame() {
@@ -504,12 +551,14 @@ class Scene_Title extends Scene_Base {
     };
 
     commandContinue() {
-        this._commandWindow.close();
+        this._commandWindow.hide();
+        this.reservedForGUI();
         SceneManager.push(Scene_Load);
     };
 
     commandOptions() {
-        this._commandWindow.close();
+        this._commandWindow.hide();
+        this.reservedForGUI();
         SceneManager.push(Scene_Options);
     };
 
@@ -517,6 +566,269 @@ class Scene_Title extends Scene_Base {
         this._commandWindow.close();
         SceneManager.exit();
     };
+
+    commandEditMode() {
+        if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+            history.replaceState(null, '', location.href.replace('index', 'Gheum/Gheum'));
+            location.reload();
+        }
+    }
+
+    playTitleMusic() {
+        AudioManager.playBgm($dataSystem.titleBgm);
+        AudioManager.stopBgs();
+        AudioManager.stopMe();
+    };
+}
+
+//-----------------------------------------------------------------------------
+// Scene_StageOpening
+//
+// The scene class of the title screen.
+
+class Scene_StageOpening extends Scene_Base {
+    constructor() {
+        super();
+    }
+
+    create() {
+        super.create();
+        this.createBackground();
+        this.createForeground();
+        this.createWindowLayer();
+        this.createCommandWindow();
+    };
+
+    start() {
+        super.start();
+        SceneManager.clearStack();
+        this.centerSprite(this._backSprite1);
+        this.centerSprite(this._backSprite2);
+        this.playTitleMusic();
+        this.startFadeIn(this.fadeSpeed(), false);
+    };
+
+    resume() {
+        super.resume();
+        this._commandWindow.show();
+    }
+
+    stop() {
+        super.stop();
+        SceneManager.snapForBackground();
+    }
+
+    isBusy() {
+        return this._commandWindow.isClosing() || super.isBusy();
+    };
+
+    terminate() {
+        super.terminate();
+        SceneManager.snapForBackground();
+    };
+
+    createBackground() {
+        this._backSprite1 = new Sprite(ImageManager.loadTitle1($dataSystem.title1Name));
+        this._backSprite2 = new Sprite(ImageManager.loadTitle2($dataSystem.title2Name));
+        this.addChild(this._backSprite1);
+        this.addChild(this._backSprite2);
+    };
+
+    createForeground() {
+        this._gameTitleSprite = new Sprite(new Bitmap(Graphics.width, Graphics.height));
+        this.addChild(this._gameTitleSprite);
+        if ($dataSystem.optDrawTitle) {
+            this.drawGameTitle();
+        }
+    };
+
+    drawGameTitle() {
+        let x = 20;
+        let y = Graphics.height / 4;
+        let maxWidth = Graphics.width - x * 2;
+        let text = $dataSystem.gameTitle;
+        this._gameTitleSprite.bitmap.outlineColor = 'black';
+        this._gameTitleSprite.bitmap.outlineWidth = 8;
+        this._gameTitleSprite.bitmap.fontSize = 72;
+        this._gameTitleSprite.bitmap.drawText(text, x, y, maxWidth, 48, 'center');
+    };
+
+    centerSprite(sprite) {
+        sprite.x = Graphics.width / 2;
+        sprite.y = Graphics.height / 2;
+        sprite.anchor.x = 0.5;
+        sprite.anchor.y = 0.5;
+    };
+
+    createCommandWindow() {
+        this._commandWindow = new Window_StartMenu();
+        this._commandWindow.setHandler('newGame', this.commandNewGame.bind(this));
+        this._commandWindow.setHandler('continue', this.commandContinue.bind(this));
+        this._commandWindow.setHandler('options', this.commandOptions.bind(this));
+        this._commandWindow.setHandler('exit', this.commandExit.bind(this));
+        this._commandWindow.setHandler('edit', this.commandEditMode.bind(this));
+        this.addWindow(this._commandWindow);
+        this._commandWindow.open();
+    };
+
+    commandNewGame() {
+        DataManager.setupNewGame();
+        this._commandWindow.close();
+        this.fadeOutAll();
+        SceneManager.goto(Scene_Map);
+    };
+
+    commandContinue() {
+        this._commandWindow.hide();
+        this.reservedForGUI();
+        SceneManager.push(Scene_Load);
+    };
+
+    commandOptions() {
+        this._commandWindow.hide();
+        this.reservedForGUI();
+        SceneManager.push(Scene_Options);
+    };
+
+    commandExit() {
+        this._commandWindow.close();
+        SceneManager.exit();
+    };
+
+    commandEditMode() {
+        if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+            history.replaceState(null, '', location.href.replace('index', 'Gheum/Gheum'));
+            location.reload();
+        }
+    }
+
+    playTitleMusic() {
+        AudioManager.playBgm($dataSystem.titleBgm);
+        AudioManager.stopBgs();
+        AudioManager.stopMe();
+    };
+}
+
+//-----------------------------------------------------------------------------
+// Scene_StageEnding
+//
+// The scene class of the title screen.
+
+class Scene_StageEnding extends Scene_Base {
+    constructor() {
+        super();
+    }
+
+    create() {
+        super.create();
+        this.createBackground();
+        this.createForeground();
+        this.createWindowLayer();
+        this.createCommandWindow();
+    };
+
+    start() {
+        super.start();
+        SceneManager.clearStack();
+        this.centerSprite(this._backSprite1);
+        this.centerSprite(this._backSprite2);
+        this.playTitleMusic();
+        this.startFadeIn(this.fadeSpeed(), false);
+    };
+
+    resume() {
+        super.resume();
+        this._commandWindow.show();
+    }
+
+    stop() {
+        super.stop();
+        SceneManager.snapForBackground();
+    }
+
+    isBusy() {
+        return this._commandWindow.isClosing() || super.isBusy();
+    };
+
+    terminate() {
+        super.terminate();
+        SceneManager.snapForBackground();
+    };
+
+    createBackground() {
+        this._backSprite1 = new Sprite(ImageManager.loadTitle1($dataSystem.title1Name));
+        this._backSprite2 = new Sprite(ImageManager.loadTitle2($dataSystem.title2Name));
+        this.addChild(this._backSprite1);
+        this.addChild(this._backSprite2);
+    };
+
+    createForeground() {
+        this._gameTitleSprite = new Sprite(new Bitmap(Graphics.width, Graphics.height));
+        this.addChild(this._gameTitleSprite);
+        if ($dataSystem.optDrawTitle) {
+            this.drawGameTitle();
+        }
+    };
+
+    drawGameTitle() {
+        let x = 20;
+        let y = Graphics.height / 4;
+        let maxWidth = Graphics.width - x * 2;
+        let text = $dataSystem.gameTitle;
+        this._gameTitleSprite.bitmap.outlineColor = 'black';
+        this._gameTitleSprite.bitmap.outlineWidth = 8;
+        this._gameTitleSprite.bitmap.fontSize = 72;
+        this._gameTitleSprite.bitmap.drawText(text, x, y, maxWidth, 48, 'center');
+    };
+
+    centerSprite(sprite) {
+        sprite.x = Graphics.width / 2;
+        sprite.y = Graphics.height / 2;
+        sprite.anchor.x = 0.5;
+        sprite.anchor.y = 0.5;
+    };
+
+    createCommandWindow() {
+        this._commandWindow = new Window_StartMenu();
+        this._commandWindow.setHandler('newGame', this.commandNewGame.bind(this));
+        this._commandWindow.setHandler('continue', this.commandContinue.bind(this));
+        this._commandWindow.setHandler('options', this.commandOptions.bind(this));
+        this._commandWindow.setHandler('exit', this.commandExit.bind(this));
+        this._commandWindow.setHandler('edit', this.commandEditMode.bind(this));
+        this.addWindow(this._commandWindow);
+        this._commandWindow.open();
+    };
+
+    commandNewGame() {
+        DataManager.setupNewGame();
+        this._commandWindow.close();
+        this.fadeOutAll();
+        SceneManager.goto(Scene_Map);
+    };
+
+    commandContinue() {
+        this._commandWindow.hide();
+        this.reservedForGUI();
+        SceneManager.push(Scene_Load);
+    };
+
+    commandOptions() {
+        this._commandWindow.hide();
+        this.reservedForGUI();
+        SceneManager.push(Scene_Options);
+    };
+
+    commandExit() {
+        this._commandWindow.close();
+        SceneManager.exit();
+    };
+
+    commandEditMode() {
+        if (Utils.isNwjs() && Utils.isOptionValid('test')) {
+            history.replaceState(null, '', location.href.replace('index', 'Gheum/Gheum'));
+            location.reload();
+        }
+    }
 
     playTitleMusic() {
         AudioManager.playBgm($dataSystem.titleBgm);
@@ -542,7 +854,7 @@ class Scene_Map extends Scene_Base {
     create() {
         super.create();
         this._transfer = $gamePlayer.isTransferring();
-        var mapId = this._transfer ? $gamePlayer.newMapId() : $gameMap.mapId();
+        let mapId = this._transfer ? $gamePlayer.newMapId() : $gameMap.mapId();
         DataManager.loadMapData(mapId);
     };
 
@@ -593,7 +905,7 @@ class Scene_Map extends Scene_Base {
     };
 
     updateMain() {
-        var active = this.isActive();
+        let active = this.isActive();
         $gameMap.update(active);
         $gamePlayer.update(active);
         $gameTimer.update(active);
@@ -607,6 +919,14 @@ class Scene_Map extends Scene_Base {
 
     stop() {
         super.stop();
+        if (SceneManager._nextScene) {
+            switch (SceneManager._nextScene.constructor) {
+                case Scene_Menu:
+                case Scene_Character:
+                case Scene_Objectives:
+                    SceneManager.snapForBackground();
+            }
+        }
         $gamePlayer.straighten();
         this._mapNameWindow.close();
         if (this.needsSlowFadeOut()) {
@@ -630,7 +950,6 @@ class Scene_Map extends Scene_Base {
             this._spriteset.update();
             this._mapNameWindow.hide();
             this._windowLayer.visible = false;
-            SceneManager.snapForBackground();
             this._windowLayer.visible = true;
         } else {
             ImageManager.clearRequest();
@@ -683,8 +1002,8 @@ class Scene_Map extends Scene_Base {
         if (TouchInput.isTriggered() || this._touchCount > 0) {
             if (TouchInput.isPressed()) {
                 if (this._touchCount === 0 || this._touchCount >= 15) {
-                    var x = $gameMap.canvasToMapX(TouchInput.x);
-                    var y = $gameMap.canvasToMapY(TouchInput.y);
+                    let x = $gameMap.canvasToMapX(TouchInput.x);
+                    let y = $gameMap.canvasToMapY(TouchInput.y);
                     $gameTemp.setDestination(x, y);
                 }
                 this._touchCount++;
@@ -724,17 +1043,15 @@ class Scene_Map extends Scene_Base {
     };
 
     createAllWindows() {
-        this.createNavigator();
+        this.createMenuBar();
         this.createMessageWindow();
         this.createScrollTextWindow();
     };
 
-    createNavigator() {
-        this._navigator = new Window_Navigator();
-        this._navigator.setHandler('mainmenu', this.onMenuCalled.bind(this));
-        this._navigator.setHandler('character', this.onCharacterCalled.bind(this));
-        this._navigator.setHandler('objectives', this.onObjectivesCalled.bind(this));
-        this.addWindow(this._navigator);
+    createMenuBar() {
+        this._menuBar = new Window_MenuBar();
+        this._menuBar.setHandler('mainmenu', this.onMenuCalled.bind(this));
+        this.addWindow(this._menuBar);
     };
 
     createMapNameWindow() {
@@ -763,43 +1080,22 @@ class Scene_Map extends Scene_Base {
 
     updateEncounter() {
         if ($gamePlayer.executeEncounter()) {
-            SceneManager.push(Scene_Battle);
+            SceneManager.goto(Scene_Battle);
         }
     };
 
     onMenuCalled() {
         if (this.isSceneChangeOk()) {
             if (!SceneManager.isSceneChanging() && !$gameMap.isEventRunning()) {
+                this.reservedForGUI();
                 SceneManager.push(Scene_Menu);
-                Window_MenuCommand.initCommandPosition();
+                Window_Menu.initCommandPosition();
                 $gameTemp.clearDestination();
                 this._mapNameWindow.hide();
                 this._waitCount = 2;
             }
         }
     };
-
-    onCharacterCalled() {
-        if (this.isSceneChangeOk()) {
-            if (!SceneManager.isSceneChanging()) {
-                SceneManager.push(Scene_Character);
-                $gameTemp.clearDestination();
-                this._mapNameWindow.hide();
-                this._waitCount = 2;
-            }
-        }
-    }
-
-    onObjectivesCalled() {
-        if (this.isSceneChangeOk()) {
-            if (!SceneManager.isSceneChanging()) {
-                SceneManager.push(Scene_Objectives);
-                $gameTemp.clearDestination();
-                this._mapNameWindow.hide();
-                this._waitCount = 2;
-            }
-        }
-    }
 
     updateCallDebug() {
         if (this.isDebugCalled()) {
@@ -812,7 +1108,7 @@ class Scene_Map extends Scene_Base {
     };
 
     fadeInForTransfer() {
-        var fadeType = $gamePlayer.fadeType();
+        let fadeType = $gamePlayer.fadeType();
         switch (fadeType) {
             case 0:
             case 1:
@@ -822,7 +1118,7 @@ class Scene_Map extends Scene_Base {
     };
 
     fadeOutForTransfer() {
-        var fadeType = $gamePlayer.fadeType();
+        let fadeType = $gamePlayer.fadeType();
         switch (fadeType) {
             case 0:
             case 1:
@@ -856,14 +1152,14 @@ class Scene_Map extends Scene_Base {
     updateEncounterEffect() {
         if (this._encounterEffectDuration > 0) {
             this._encounterEffectDuration--;
-            var speed = this.encounterEffectSpeed();
-            var n = speed - this._encounterEffectDuration;
-            var p = n / speed;
-            var q = ((p - 1) * 20 * p + 5) * p + 1;
-            var zoomX = $gamePlayer.screenX();
-            var zoomY = $gamePlayer.screenY() - 24;
+            let speed = this.encounterEffectSpeed();
+            let n = speed - this._encounterEffectDuration;
+            let p = n / speed;
+            let q = 2* p ** 2 + 1 ;
+            let zoomX = $gamePlayer.screenX();
+            let zoomY = $gamePlayer.screenY() - 24;
             if (n === 2) {
-                $gameScreen.setZoom(zoomX, zoomY, 1);
+                //$gameScreen.setZoom(zoomX, zoomY, 1);
                 this.snapForBattleBackground();
                 this.startFlashForEncounter(speed / 2);
             }
@@ -885,7 +1181,7 @@ class Scene_Map extends Scene_Base {
     };
 
     startFlashForEncounter(duration) {
-        var color = [255, 255, 255, 255];
+        let color = [255, 255, 255, 255];
         $gameScreen.startFlash(color, duration);
     };
 
@@ -921,7 +1217,7 @@ class Scene_MenuBase extends Scene_Base {
 
     createBackground() {
         this._backgroundSprite = new Sprite();
-        this._backgroundSprite.bitmap = SceneManager.backgroundBitmap();;
+        this._backgroundSprite.bitmap = SceneManager.backgroundBitmap;
         this.addChild(this._backgroundSprite);
     };
 
@@ -948,6 +1244,10 @@ class Scene_MenuBase extends Scene_Base {
 
     onActorChange() {
     };
+
+    isGUI() {
+        return true;
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -962,20 +1262,27 @@ class Scene_Menu extends Scene_MenuBase {
 
     create() {
         super.create();
-        this.createCommandWindow();
+        this.createMenuWindow();
     };
 
-    start() {
-        super.start();
+    createMenuWindow() {
+        this._menuWindow = new Window_Menu(0, 0);
+        this._menuWindow.setHandler('character', this.commandCharacter.bind(this));
+        this._menuWindow.setHandler('objectives', this.commandObjectives.bind(this));
+        this._menuWindow.setHandler('options', this.commandOptions.bind(this));
+        this._menuWindow.setHandler('save', this.commandSave.bind(this));
+        this._menuWindow.setHandler('quit', this.commandQuit.bind(this));
+        this._menuWindow.setHandler('continue', this.popScene.bind(this));
+        this._menuWindow.setHandler('cancel', this.popScene.bind(this));
+        this.addWindow(this._menuWindow);
     };
 
-    createCommandWindow() {
-        this._commandWindow = new Window_MenuCommand(0, 0);
-        this._commandWindow.setHandler('options', this.commandOptions.bind(this));
-        this._commandWindow.setHandler('save', this.commandSave.bind(this));
-        this._commandWindow.setHandler('gameEnd', this.commandGameEnd.bind(this));
-        this._commandWindow.setHandler('cancel', this.popScene.bind(this));
-        this.addWindow(this._commandWindow);
+    commandCharacter() {
+        SceneManager.push(Scene_Character);
+    };
+
+    commandObjectives() {
+        SceneManager.push(Scene_Objectives);
     };
 
     commandOptions() {
@@ -986,10 +1293,10 @@ class Scene_Menu extends Scene_MenuBase {
         SceneManager.push(Scene_Save);
     };
 
-    commandGameEnd() {
-        SceneManager.push(Scene_GameEnd);
+    commandQuit() {
+        this.fadeOutAll();
+        SceneManager.goto(Scene_Title);
     };
-
 }
 
 //-----------------------------------------------------------------------------
@@ -1016,10 +1323,10 @@ class Scene_Character extends Scene_MenuBase {
 
     createCommandWindow() {
         this._commandWindow = new Window_Character(0, 0);
-        this._commandWindow.setHandler('item', this.commandItem.bind(this));
-        this._commandWindow.setHandler('skill', this.commandPersonal.bind(this));
-        this._commandWindow.setHandler('equip', this.commandPersonal.bind(this));
         this._commandWindow.setHandler('status', this.commandPersonal.bind(this));
+        this._commandWindow.setHandler('items', this.commandItems.bind(this));
+        this._commandWindow.setHandler('skills', this.commandPersonal.bind(this));
+        this._commandWindow.setHandler('equipments', this.commandPersonal.bind(this));
         this._commandWindow.setHandler('formation', this.commandFormation.bind(this));
         this._commandWindow.setHandler('cancel', this.popScene.bind(this));
         this.addWindow(this._commandWindow);
@@ -1038,7 +1345,7 @@ class Scene_Character extends Scene_MenuBase {
         this.addWindow(this._statusWindow);
     };
 
-    commandItem() {
+    commandItems() {
         SceneManager.push(Scene_Item);
     };
 
@@ -1060,10 +1367,10 @@ class Scene_Character extends Scene_MenuBase {
 
     onPersonalOk() {
         switch (this._commandWindow.currentSymbol()) {
-            case 'skill':
+            case 'skills':
                 SceneManager.push(Scene_Skill);
                 break;
-            case 'equip':
+            case 'equipments':
                 SceneManager.push(Scene_Equip);
                 break;
             case 'status':
@@ -1078,9 +1385,9 @@ class Scene_Character extends Scene_MenuBase {
     };
 
     onFormationOk() {
-        var index = this._statusWindow.index();
-        var actor = $gameParty.members()[index];
-        var pendingIndex = this._statusWindow.pendingIndex();
+        let index = this._statusWindow.index;
+        let actor = $gameParty.members()[index];
+        let pendingIndex = this._statusWindow.pendingIndex();
         if (pendingIndex >= 0) {
             $gameParty.swapOrder(index, pendingIndex);
             this._statusWindow.setPendingIndex(-1);
@@ -1131,10 +1438,10 @@ class Scene_Objectives extends Scene_MenuBase {
     };
 
     createHelpWindow() {
-        var wx = this._objectivesWindow.x;
-        var wy = this._objectivesWindow.y + this._objectivesWindow.height;
-        var ww = this._objectivesWindow.width;
-        var wh = Graphics._boxHeight - wy;
+        let wx = this._objectivesWindow.x;
+        let wy = this._objectivesWindow.y + this._objectivesWindow.height;
+        let ww = this._objectivesWindow.width;
+        let wh = Graphics._boxHeight - wy;
         this._helpWindow = new Window_Help();
         this._helpWindow.x = wx;
         this._helpWindow.y = wy;
@@ -1143,7 +1450,6 @@ class Scene_Objectives extends Scene_MenuBase {
         this._objectivesWindow.setHelpWindow(this._helpWindow);
         this.addWindow(this._helpWindow);
     };
-
 
 }
 
@@ -1162,7 +1468,7 @@ class Scene_ItemBase extends Scene_MenuBase {
     };
 
     createActorWindow() {
-        this._actorWindow = new Window_MenuActor();
+        this._actorWindow = new Window_CharacterActor();
         this._actorWindow.setHandler('ok', this.onActorOk.bind(this));
         this._actorWindow.setHandler('cancel', this.onActorCancel.bind(this));
         this.addWindow(this._actorWindow);
@@ -1177,7 +1483,7 @@ class Scene_ItemBase extends Scene_MenuBase {
     };
 
     isCursorLeft() {
-        return this._itemWindow.index() % 2 === 0;
+        return this._itemWindow.index % 2 === 0;
     };
 
     showSubWindow(window) {
@@ -1205,8 +1511,8 @@ class Scene_ItemBase extends Scene_MenuBase {
     };
 
     determineItem() {
-        var action = new Game_Action(this.user());
-        var item = this.item();
+        let action = new Game_Action(this.user());
+        let item = this.item();
         action.setItemObject(item);
         if (action.isForFriend()) {
             this.showSubWindow(this._actorWindow);
@@ -1232,14 +1538,14 @@ class Scene_ItemBase extends Scene_MenuBase {
     };
 
     itemTargetActors() {
-        var action = new Game_Action(this.user());
+        let action = new Game_Action(this.user());
         action.setItemObject(this.item());
         if (!action.isForFriend()) {
             return [];
         } else if (action.isForAll()) {
             return $gameParty.members();
         } else {
-            return [$gameParty.members()[this._actorWindow.index()]];
+            return [$gameParty.members()[this._actorWindow.index]];
         }
     };
 
@@ -1248,7 +1554,7 @@ class Scene_ItemBase extends Scene_MenuBase {
     };
 
     isItemEffectsValid() {
-        var action = new Game_Action(this.user());
+        let action = new Game_Action(this.user());
         action.setItemObject(this.item());
         return this.itemTargetActors().some(function (target) {
             return action.testApply(target);
@@ -1256,10 +1562,10 @@ class Scene_ItemBase extends Scene_MenuBase {
     };
 
     applyItem() {
-        var action = new Game_Action(this.user());
+        let action = new Game_Action(this.user());
         action.setItemObject(this.item());
         this.itemTargetActors().forEach(function (target) {
-            for (var i = 0; i < action.numRepeats(); i++) {
+            for (let i = 0; i < action.numRepeats(); i++) {
                 action.apply(target);
             }
         }, this);
@@ -1301,8 +1607,8 @@ class Scene_Item extends Scene_ItemBase {
     };
 
     createItemWindow() {
-        var wy = this._categoryWindow.y + this._categoryWindow.height;
-        var wh = Graphics.boxHeight - wy;
+        let wy = this._categoryWindow.y + this._categoryWindow.height;
+        let wh = Graphics.boxHeight - wy;
         this._itemWindow = new Window_ItemList(0, wy, Graphics.boxWidth, wh);
         this._itemWindow.setHelpWindow(this._helpWindow);
         this._itemWindow.setHandler('ok', this.onItemOk.bind(this));
@@ -1312,10 +1618,10 @@ class Scene_Item extends Scene_ItemBase {
     };
 
     user() {
-        var members = $gameParty.movableMembers();
-        var bestActor = members[0];
-        var bestPha = 0;
-        for (var i = 0; i < members.length; i++) {
+        let members = $gameParty.movableMembers();
+        let bestActor = members[0];
+        let bestPha = 0;
+        for (let i = 0; i < members.length; i++) {
             if (members[i].pha > bestPha) {
                 bestPha = members[i].pha;
                 bestActor = members[i];
@@ -1374,7 +1680,7 @@ class Scene_Skill extends Scene_ItemBase {
     };
 
     createSkillTypeWindow() {
-        var wy = this._helpWindow.height;
+        let wy = this._helpWindow.height;
         this._skillTypeWindow = new Window_SkillType(0, wy);
         this._skillTypeWindow.setHelpWindow(this._helpWindow);
         this._skillTypeWindow.setHandler('skill', this.commandSkill.bind(this));
@@ -1385,20 +1691,20 @@ class Scene_Skill extends Scene_ItemBase {
     };
 
     createStatusWindow() {
-        var wx = this._skillTypeWindow.width;
-        var wy = this._helpWindow.height;
-        var ww = Graphics.boxWidth - wx;
-        var wh = this._skillTypeWindow.height;
+        let wx = this._skillTypeWindow.width;
+        let wy = this._helpWindow.height;
+        let ww = Graphics.boxWidth - wx;
+        let wh = this._skillTypeWindow.height;
         this._statusWindow = new Window_SkillStatus(wx, wy, ww, wh);
         this._statusWindow.reserveFaceImages();
         this.addWindow(this._statusWindow);
     };
 
     createItemWindow() {
-        var wx = 0;
-        var wy = this._statusWindow.y + this._statusWindow.height;
-        var ww = Graphics.boxWidth;
-        var wh = Graphics.boxHeight - wy;
+        let wx = 0;
+        let wy = this._statusWindow.y + this._statusWindow.height;
+        let ww = Graphics.boxWidth;
+        let wh = Graphics.boxHeight - wy;
         this._itemWindow = new Window_SkillList(wx, wy, ww, wh);
         this._itemWindow.setHelpWindow(this._helpWindow);
         this._itemWindow.setHandler('ok', this.onItemOk.bind(this));
@@ -1408,7 +1714,82 @@ class Scene_Skill extends Scene_ItemBase {
     };
 
     refreshActor() {
-        var actor = this.actor();
+        let actor = this.actor();
+        this._skillTypeWindow.setActor(actor);
+        this._statusWindow.setActor(actor);
+        this._itemWindow.setActor(actor);
+    };
+
+    user() {
+        return this.actor();
+    };
+
+    commandSkill() {
+        this._itemWindow.activate();
+        this._itemWindow.selectLast();
+    };
+
+    onItemOk() {
+        this.actor().setLastMenuSkill(this.item());
+        this.determineItem();
+    };
+
+    onItemCancel() {
+        this._itemWindow.deselect();
+        this._skillTypeWindow.activate();
+    };
+
+    playSeForItem() {
+        SoundManager.playUseSkill();
+    };
+
+    useItem() {
+        super.useItem();
+        this._statusWindow.refresh();
+        this._itemWindow.refresh();
+    };
+
+    onActorChange() {
+        this.refreshActor();
+        this._skillTypeWindow.activate();
+    };
+}
+
+//-----------------------------------------------------------------------------
+// Scene_Skill
+//
+// The scene class of the skill screen.
+
+class Scene_SkillTree extends Scene_ItemBase {
+    constructor() {
+        super();
+    }
+
+    create() {
+        super.create();
+        this.createHelpWindow();
+        this.createSkillWindow();
+        this.createActorWindow();
+    };
+
+    start() {
+        super.start();
+        this.refreshActor();
+    };
+
+    createSkillWindow() {
+        let wy = this._helpWindow.height;
+        this._skillTypeWindow = new Window_SkillTree(0, wy);
+        this._skillTypeWindow.setHelpWindow(this._helpWindow);
+        this._skillTypeWindow.setHandler('skill', this.commandSkill.bind(this));
+        this._skillTypeWindow.setHandler('cancel', this.popScene.bind(this));
+        this._skillTypeWindow.setHandler('pagedown', this.nextActor.bind(this));
+        this._skillTypeWindow.setHandler('pageup', this.previousActor.bind(this));
+        this.addWindow(this._skillTypeWindow);
+    };
+
+    refreshActor() {
+        let actor = this.actor();
         this._skillTypeWindow.setActor(actor);
         this._statusWindow.setActor(actor);
         this._itemWindow.setActor(actor);
@@ -1475,9 +1856,9 @@ class Scene_Equip extends Scene_MenuBase {
     };
 
     createCommandWindow() {
-        var wx = this._statusWindow.width;
-        var wy = this._helpWindow.height;
-        var ww = Graphics.boxWidth - this._statusWindow.width;
+        let wx = this._statusWindow.width;
+        let wy = this._helpWindow.height;
+        let ww = Graphics.boxWidth - this._statusWindow.width;
         this._commandWindow = new Window_EquipCommand(wx, wy, ww);
         this._commandWindow.setHelpWindow(this._helpWindow);
         this._commandWindow.setHandler('equip', this.commandEquip.bind(this));
@@ -1490,10 +1871,10 @@ class Scene_Equip extends Scene_MenuBase {
     };
 
     createSlotWindow() {
-        var wx = this._statusWindow.width;
-        var wy = this._commandWindow.y + this._commandWindow.height;
-        var ww = Graphics.boxWidth - this._statusWindow.width;
-        var wh = this._statusWindow.height - this._commandWindow.height;
+        let wx = this._statusWindow.width;
+        let wy = this._commandWindow.y + this._commandWindow.height;
+        let ww = Graphics.boxWidth - this._statusWindow.width;
+        let wh = this._statusWindow.height - this._commandWindow.height;
         this._slotWindow = new Window_EquipSlot(wx, wy, ww, wh);
         this._slotWindow.setHelpWindow(this._helpWindow);
         this._slotWindow.setStatusWindow(this._statusWindow);
@@ -1503,10 +1884,10 @@ class Scene_Equip extends Scene_MenuBase {
     };
 
     createItemWindow() {
-        var wx = 0;
-        var wy = this._statusWindow.y + this._statusWindow.height;
-        var ww = Graphics.boxWidth;
-        var wh = Graphics.boxHeight - wy;
+        let wx = 0;
+        let wy = this._statusWindow.y + this._statusWindow.height;
+        let ww = Graphics.boxWidth;
+        let wh = Graphics.boxHeight - wy;
         this._itemWindow = new Window_EquipItem(wx, wy, ww, wh);
         this._itemWindow.setHelpWindow(this._helpWindow);
         this._itemWindow.setStatusWindow(this._statusWindow);
@@ -1517,7 +1898,7 @@ class Scene_Equip extends Scene_MenuBase {
     };
 
     refreshActor() {
-        var actor = this.actor();
+        let actor = this.actor();
         this._statusWindow.setActor(actor);
         this._slotWindow.setActor(actor);
         this._itemWindow.setActor(actor);
@@ -1556,7 +1937,7 @@ class Scene_Equip extends Scene_MenuBase {
 
     onItemOk() {
         SoundManager.playEquip();
-        this.actor().changeEquip(this._slotWindow.index(), this._itemWindow.item());
+        this.actor().changeEquip(this._slotWindow.index, this._itemWindow.item());
         this._slotWindow.activate();
         this._slotWindow.refresh();
         this._itemWindow.deselect();
@@ -1601,7 +1982,7 @@ class Scene_Status extends Scene_MenuBase {
     };
 
     refreshActor() {
-        var actor = this.actor();
+        let actor = this.actor();
         this._statusWindow.setActor(actor);
     };
 
@@ -1662,7 +2043,7 @@ class Scene_File extends Scene_MenuBase {
     };
 
     savefileId() {
-        return this._listWindow.index() + 1;
+        return this._listWindow.index + 1;
     };
 
     createHelpWindow() {
@@ -1672,10 +2053,10 @@ class Scene_File extends Scene_MenuBase {
     };
 
     createListWindow() {
-        var x = 0;
-        var y = this._helpWindow.height;
-        var width = Graphics.boxWidth;
-        var height = Graphics.boxHeight - y;
+        let x = 0;
+        let y = this._helpWindow.height;
+        let width = Graphics.boxWidth;
+        let height = Graphics.boxHeight - y;
         this._listWindow = new Window_SavefileList(x, y, width, height);
         this._listWindow.setHandler('ok', this.onSavefileOk.bind(this));
         this._listWindow.setHandler('cancel', this.popScene.bind(this));
@@ -1811,44 +2192,6 @@ class Scene_Load extends Scene_File {
 }
 
 //-----------------------------------------------------------------------------
-// Scene_GameEnd
-//
-// The scene class of the game end screen.
-
-class Scene_GameEnd extends Scene_MenuBase {
-    constructor() {
-        super();
-    }
-
-    create() {
-        super.create();
-        this.createCommandWindow();
-    };
-
-    stop() {
-        super.stop();
-        this._commandWindow.close();
-    };
-
-    createBackground() {
-        super.createBackground();
-        this.setBackgroundOpacity(128);
-    };
-
-    createCommandWindow() {
-        this._commandWindow = new Window_GameEnd();
-        this._commandWindow.setHandler('toTitle', this.commandToTitle.bind(this));
-        this._commandWindow.setHandler('cancel', this.popScene.bind(this));
-        this.addWindow(this._commandWindow);
-    };
-
-    commandToTitle() {
-        this.fadeOutAll();
-        SceneManager.goto(Scene_Title);
-    };
-}
-
-//-----------------------------------------------------------------------------
 // Scene_Shop
 //
 // The scene class of the shop screen.
@@ -1893,15 +2236,15 @@ class Scene_Shop extends Scene_MenuBase {
     };
 
     createDummyWindow() {
-        var wy = this._commandWindow.y + this._commandWindow.height;
-        var wh = Graphics.boxHeight - wy;
+        let wy = this._commandWindow.y + this._commandWindow.height;
+        let wh = Graphics.boxHeight - wy;
         this._dummyWindow = new Window_Base(0, wy, Graphics.boxWidth, wh);
         this.addWindow(this._dummyWindow);
     };
 
     createNumberWindow() {
-        var wy = this._dummyWindow.y;
-        var wh = this._dummyWindow.height;
+        let wy = this._dummyWindow.y;
+        let wh = this._dummyWindow.height;
         this._numberWindow = new Window_ShopNumber(0, wy, wh);
         this._numberWindow.hide();
         this._numberWindow.setHandler('ok', this.onNumberOk.bind(this));
@@ -1910,18 +2253,18 @@ class Scene_Shop extends Scene_MenuBase {
     };
 
     createStatusWindow() {
-        var wx = this._numberWindow.width;
-        var wy = this._dummyWindow.y;
-        var ww = Graphics.boxWidth - wx;
-        var wh = this._dummyWindow.height;
+        let wx = this._numberWindow.width;
+        let wy = this._dummyWindow.y;
+        let ww = Graphics.boxWidth - wx;
+        let wh = this._dummyWindow.height;
         this._statusWindow = new Window_ShopStatus(wx, wy, ww, wh);
         this._statusWindow.hide();
         this.addWindow(this._statusWindow);
     };
 
     createBuyWindow() {
-        var wy = this._dummyWindow.y;
-        var wh = this._dummyWindow.height;
+        let wy = this._dummyWindow.y;
+        let wh = this._dummyWindow.height;
         this._buyWindow = new Window_ShopBuy(0, wy, wh, this._goods);
         this._buyWindow.setHelpWindow(this._helpWindow);
         this._buyWindow.setStatusWindow(this._statusWindow);
@@ -1943,8 +2286,8 @@ class Scene_Shop extends Scene_MenuBase {
     };
 
     createSellWindow() {
-        var wy = this._categoryWindow.y + this._categoryWindow.height;
-        var wh = Graphics.boxHeight - wy;
+        let wy = this._categoryWindow.y + this._categoryWindow.height;
+        let wh = Graphics.boxHeight - wy;
         this._sellWindow = new Window_ShopSell(0, wy, Graphics.boxWidth, wh);
         this._sellWindow.setHelpWindow(this._helpWindow);
         this._sellWindow.hide();
@@ -2075,8 +2418,8 @@ class Scene_Shop extends Scene_MenuBase {
     };
 
     maxBuy() {
-        var max = $gameParty.maxItems(this._item) - $gameParty.numItems(this._item);
-        var price = this.buyingPrice();
+        let max = $gameParty.maxItems(this._item) - $gameParty.numItems(this._item);
+        let price = this.buyingPrice();
         if (price > 0) {
             return Math.min(max, Math.floor(this.money() / price));
         } else {
@@ -2174,8 +2517,8 @@ class Scene_Debug extends Scene_MenuBase {
     };
 
     createEditWindow() {
-        var wx = this._rangeWindow.width;
-        var ww = Graphics.boxWidth - wx;
+        let wx = this._rangeWindow.width;
+        let ww = Graphics.boxWidth - wx;
         this._editWindow = new Window_DebugEdit(wx, 0, ww);
         this._editWindow.setHandler('cancel', this.onEditCancel.bind(this));
         this._rangeWindow.setEditWindow(this._editWindow);
@@ -2183,10 +2526,10 @@ class Scene_Debug extends Scene_MenuBase {
     };
 
     createDebugHelpWindow() {
-        var wx = this._editWindow.x;
-        var wy = this._editWindow.height;
-        var ww = this._editWindow.width;
-        var wh = Graphics.boxHeight - wy;
+        let wx = this._editWindow.x;
+        let wy = this._editWindow.height;
+        let ww = this._editWindow.width;
+        let wh = Graphics.boxHeight - wy;
         this._debugHelpWindow = new Window_Base(wx, wy, ww, wh);
         this.addWindow(this._debugHelpWindow);
     };
@@ -2234,31 +2577,25 @@ class Scene_Battle extends Scene_Base {
 
     create() {
         super.create();
+        this.createTextures();
         this.createDisplayObjects();
+        this.group.enableSort = true;
     };
 
     start() {
-        switch (SceneManager._previousClass) {
-            case Scene_Menu:
-            case Scene_Character:
-                super.start();
-                BattleManager.continueBattle();
-                if (BattleManager._phase === 'input')  {
-                    this._statusWindow.open();
-                    this._skillBar.open();
-                }
-                break;
-            default:
-                super.start();
-                this.startFadeIn(this.fadeSpeed(), false);
-                BattleManager.playBattleBgm();
-                BattleManager.startBattle();
-                break;
-        }
+        super.start();
+        this.startFadeIn(this.fadeSpeed(), false);
+        BattleManager.playBattleBgm();
+        BattleManager.startBattle();
     };
 
+    resume() {
+        super.resume();
+        this._menuBar.activate();
+    }
+
     update() {
-        var active = this.isActive();
+        let active = this.isActive();
         $gameTimer.update(active);
         $gameScreen.update();
         this.updateStatusWindow();
@@ -2277,9 +2614,7 @@ class Scene_Battle extends Scene_Base {
     };
 
     isAnyInputWindowActive() {
-        return (this._skillBar.active ||
-            this._skillWindow.active ||
-            this._itemWindow.active ||
+        return (this._skillWindow.active ||
             this._actorWindow.active ||
             this._enemyWindow.active);
     };
@@ -2287,7 +2622,7 @@ class Scene_Battle extends Scene_Base {
     changeInputWindow() {
         if (BattleManager.isInputting()) {
             if (BattleManager.actor()) {
-                this.startSkillBarSelection();
+                this.startSkillSelection();
             } else {
                 this.selectNextCommand();
             }
@@ -2309,8 +2644,6 @@ class Scene_Battle extends Scene_Base {
         }
         if (this.needsSlowFadeOut()) {
             this.startFadeOut(this.slowFadeSpeed(), false);
-        } else {
-            // this.startFadeOut(this.fadeSpeed(), false);
         }
         this._windowLayer.visible = true;
     };
@@ -2325,19 +2658,20 @@ class Scene_Battle extends Scene_Base {
 
     needsSlowFadeOut() {
         return (SceneManager.isNextScene(Scene_Title) ||
-            SceneManager.isNextScene(Scene_Gameover));
+            SceneManager.isNextScene(Scene_Gameover) ||
+            SceneManager.isNextScene(Scene_Map));
     };
 
     updateStatusWindow() {
         if ($gameMessage.isBusy()) {
-            this._statusWindow.close();
-            this._targetBar.close();
-            this._skillBar.close();
-            this._navigator.close();
+            this._playerBars.close();
+            this._enemyBars.close();
+            this._skillWindow.close();
+            this._menuBar.close();
         } else if (this.isActive() && !this._messageWindow.isClosing()) {
-            this._statusWindow.open();
-            this._targetBar.open();
-            this._navigator.open();
+            this._playerBars.open();
+            this._enemyBars.open();
+            this._menuBar.open();
         }
     };
 
@@ -2345,43 +2679,69 @@ class Scene_Battle extends Scene_Base {
         return this.isActive() && !$gameMessage.isBusy();
     };
 
+    createTextures() {
+        Sprite_Projectile._createBaseTexture();
+    }
+
     createDisplayObjects() {
         this.createSpriteset();
+        this.createLayer();
         this.createWindowLayer();
         this.createAllWindows();
+        this.createIndicator();
         BattleManager.setLogWindow(this._logWindow);
-        BattleManager.setStatusWindow(this._statusWindow);
-        BattleManager.setTargetBar(this._targetBar);
+        BattleManager.setPlayerBars(this._playerBars);
+        BattleManager.setEnemyBars(this._enemyBars);
         BattleManager.setSpriteset(this._spriteset);
         this._logWindow.setSpriteset(this._spriteset);
     };
+
+    createWindowLayer() {
+        super.createWindowLayer();
+        this._windowLayer.parentGroup = this._spriteset._UIGroup;
+    }
 
     createSpriteset() {
         this._spriteset = new Spriteset_Battle();
         this.addChild(this._spriteset);
     };
 
+    createLayer() {
+        this._mainLayer = new PIXI.display.Layer(this._spriteset._mainGroup);
+        this._overlayLayer = new PIXI.display.Layer(this._spriteset._overlayGroup);
+        this._UILayer = new PIXI.display.Layer(this._spriteset._UIGroup);
+        this.addChild(this._mainLayer);
+        this.addChild(this._overlayLayer);
+        this.addChild(this._UILayer);
+    }
+
     createAllWindows() {
-        this.createNavigator();
+        this.createMenuBar();
         this.createLogWindow();
-        this.createStatusWindow();
-        this.createTargetBar();
-        this.createSkillBar();
+        this.createPlayerBars();
+        this.createEnemyBars();
         this.createHelpWindow();
         this.createSkillWindow();
-        this.createItemWindow();
         this.createActorWindow();
         this.createEnemyWindow();
         this.createMessageWindow();
         this.createScrollTextWindow();
+
     };
 
-    createNavigator() {
-        this._navigator = new Window_Navigator();
-        this._navigator.setHandler('mainmenu', this.onMenuCalled.bind(this));
-        this._navigator.setHandler('character', this.onCharacterCalled.bind(this));
-        this._navigator.setHandler('objectives', this.onObjectivesCalled.bind(this));
-        this.addWindow(this._navigator);
+    createIndicator() {
+        let indicator = new Sprite_TurnIndicator();
+        indicator.x = Graphics.boxWidth / 2;
+        indicator.y = 48;
+        this.addChild(indicator);
+    }
+
+    createMenuBar() {
+        this._menuBar = new Window_MenuBar();
+        this._menuBar.setHandler('mainmenu', this.onMenuCalled.bind(this));
+        this._menuBar.setHandler('character', this.onCharacterCalled.bind(this));
+        this._menuBar.setHandler('objectives', this.onObjectivesCalled.bind(this));
+        this.addWindow(this._menuBar);
     };
 
     createLogWindow() {
@@ -2389,68 +2749,51 @@ class Scene_Battle extends Scene_Base {
         this.addWindow(this._logWindow);
     };
 
-    createStatusWindow() {
-        this._statusWindow = new Window_PlayerBar();
-        this._statusWindow.y += this._navigator.height;
-        this.addWindow(this._statusWindow);
+    createPlayerBars() {
+        this._playerBars = new Window_PlayerBars();
+        this._playerBars.y += this._menuBar.height;
+        this.addWindow(this._playerBars);
     };
 
-    createTargetBar() {
-        this._targetBar = new Window_TargetBar();
-        this._targetBar.y += this._navigator.height;
-        this.addWindow(this._targetBar);
-    };
-
-    createSkillBar() {
-        this._skillBar = new Window_SkillBar();
-        this._skillBar.setHandler('attack', this.commandAttack.bind(this));
-        this._skillBar.setHandler('skill',  this.commandSkill.bind(this));
-        this._skillBar.setHandler('guard',  this.commandGuard.bind(this));
-        this._skillBar.setHandler('item',   this.commandItem.bind(this));
-        this._skillBar.setHandler('escape', this.commandEscape.bind(this));
-        this._skillBar.setHandler('cancel', this.selectPreviousCommand.bind(this));
-        this._skillBar.deselect();
-        this.addWindow(this._skillBar);
+    createEnemyBars() {
+        this._enemyBars = new Window_EnemyBars();
+        this._enemyBars.y += this._menuBar.height;
+        this.addWindow(this._enemyBars);
     };
 
     createHelpWindow() {
-        this._helpWindow = new Window_Help();
-        this._helpWindow.y = this._statusWindow.y + this._statusWindow.height;
+        this._helpWindow = new Window_BattleHelp(6);
+        this._helpWindow.y = this._menuBar.y + this._menuBar.height;
         this._helpWindow.visible = false;
         this.addWindow(this._helpWindow);
     };
 
+    setHelpWindowPosition() {
+        this._helpWindow.width = this._skillWindow.width;
+        this._helpWindow.x = this._skillWindow.x;
+        this._helpWindow.y = this._skillWindow.y - this._helpWindow.height;
+    }
+
     createSkillWindow() {
-        var wy = this._helpWindow.y + this._helpWindow.height;
-        var wh = Graphics._boxHeight - wy;
-        this._skillWindow = new Window_BattleSkill(0, wy, Graphics.boxWidth, wh);
+        this._skillWindow = new Window_BattleSkill();
         this._skillWindow.setHelpWindow(this._helpWindow);
         this._skillWindow.setHandler('ok',     this.onSkillOk.bind(this));
-        this._skillWindow.setHandler('cancel', this.onSkillCancel.bind(this));
+        this._skillWindow.setHandler('cancel', this.onSkillSelectCancel.bind(this));
         this.addWindow(this._skillWindow);
-    };
-
-    createItemWindow() {
-        var wy = this._helpWindow.y + this._helpWindow.height;
-        var wh = Graphics._boxHeight - wy;
-        this._itemWindow = new Window_BattleItem(0, wy, Graphics.boxWidth, wh);
-        this._itemWindow.setHelpWindow(this._helpWindow);
-        this._itemWindow.setHandler('ok',     this.onItemOk.bind(this));
-        this._itemWindow.setHandler('cancel', this.onItemCancel.bind(this));
-        this.addWindow(this._itemWindow);
+        this.setHelpWindowPosition();
     };
 
     createActorWindow() {
-        this._actorWindow = new Window_BattleActor(0, 0);
-        this._actorWindow.x = this._statusWindow.x;
+        this._actorWindow = new Window_SelectActor(0, 0);
+        this._actorWindow.x = this._playerBars.x;
         this._actorWindow.setHandler('ok',     this.onActorOk.bind(this));
         this._actorWindow.setHandler('cancel', this.onActorCancel.bind(this));
         this.addWindow(this._actorWindow);
     };
 
     createEnemyWindow() {
-        this._enemyWindow = new Window_BattleEnemy(0, this._statusWindow.y);
-        this._enemyWindow.x = this._statusWindow.x;
+        this._enemyWindow = new Window_SelectEnemy(0, this._playerBars.y);
+        this._enemyWindow.x = this._playerBars.x;
         this._enemyWindow.setHandler('ok',     this.onEnemyOk.bind(this));
         this._enemyWindow.setHandler('cancel', this.onEnemyCancel.bind(this));
         this.addWindow(this._enemyWindow);
@@ -2470,48 +2813,20 @@ class Scene_Battle extends Scene_Base {
     };
 
     refreshStatus() {
-        this._statusWindow.refresh();
-        this._targetBar.refresh();
+        this._playerBars.refresh();
+        this._enemyBars.refresh();
     };
 
-    commandEscape() {
-        BattleManager.processEscape();
-        this.changeInputWindow();
+    startSkillSelection() {
+        this._menuBar.activate();
+        this.activateSkillWindow();
     };
 
-    startSkillBarSelection() {
-        this._skillBar.setup(BattleManager.actor());
-        this._skillBar.show();
-        this._skillBar.activate();
-        this._skillBar.open();
-    };
-
-    commandAttack() {
-        this._skillBar.hide();
-        BattleManager.inputtingAction().setAttack();
-        this.selectEnemySelection();
-    };
-
-    commandSkill() {
-        this._skillBar.hide();
+    activateSkillWindow() {
         this._skillWindow.setActor(BattleManager.actor());
-        this._skillWindow.setStypeId(this._skillBar.currentExt());
         this._skillWindow.refresh();
         this._skillWindow.show();
         this._skillWindow.activate();
-    };
-
-    commandGuard() {
-        this._skillBar.hide();
-        BattleManager.inputtingAction().setGuard();
-        this.selectNextCommand();
-    };
-
-    commandItem() {
-        this._skillBar.hide();
-        this._itemWindow.refresh();
-        this._itemWindow.show();
-        this._itemWindow.activate();
     };
 
     selectNextCommand() {
@@ -2533,8 +2848,9 @@ class Scene_Battle extends Scene_Base {
     onMenuCalled() {
         if (this.isSceneChangeOk()) {
             if (!SceneManager.isSceneChanging()) {
+                this.reservedForGUI();
                 SceneManager.push(Scene_Menu);
-                Window_MenuCommand.initCommandPosition();
+                Window_Menu.initCommandPosition();
             }
         }
     };
@@ -2542,6 +2858,7 @@ class Scene_Battle extends Scene_Base {
     onCharacterCalled() {
         if (this.isSceneChangeOk()) {
             if (!SceneManager.isSceneChanging()) {
+                this.reservedForGUI();
                 SceneManager.push(Scene_Character);
             }
         }
@@ -2550,32 +2867,24 @@ class Scene_Battle extends Scene_Base {
     onObjectivesCalled() {
         if (this.isSceneChangeOk()) {
             if (!SceneManager.isSceneChanging()) {
+                this.reservedForGUI();
                 SceneManager.push(Scene_Objectives);
             }
         }
     }
 
     onActorOk() {
-        var action = BattleManager.inputtingAction();
-        action.setTarget(this._actorWindow.index());
+        let action = BattleManager.inputtingAction();
+        action.setTarget(this._actorWindow.index);
         this._actorWindow.hide();
         this._skillWindow.hide();
-        this._itemWindow.hide();
         this.selectNextCommand();
     };
 
     onActorCancel() {
         this._actorWindow.hide();
-        switch (this._skillBar.currentSymbol()) {
-            case 'skill':
-                this._skillWindow.show();
-                this._skillWindow.activate();
-                break;
-            case 'item':
-                this._itemWindow.show();
-                this._itemWindow.activate();
-                break;
-        }
+        this._skillWindow.show();
+        this._skillWindow.activate();
     };
 
     selectEnemySelection() {
@@ -2586,61 +2895,43 @@ class Scene_Battle extends Scene_Base {
     };
 
     onEnemyOk() {
-        var action = BattleManager.inputtingAction();
+        let action = BattleManager.inputtingAction();
         action.setTarget(this._enemyWindow.enemyIndex());
         this._enemyWindow.hide();
         this._skillWindow.hide();
-        this._itemWindow.hide();
         this.selectNextCommand();
     };
 
     onEnemyCancel() {
         this._enemyWindow.hide();
-        switch (this._skillBar.currentSymbol()) {
-            case 'attack':
-                this._skillBar.show();
-                break;
-            case 'skill':
-                this._skillWindow.show();
-                this._skillWindow.activate();
-                break;
-            case 'item':
-                this._itemWindow.show();
-                this._itemWindow.activate();
-                break;
-        }
+        this._skillWindow.show();
+        this._skillWindow.activate();
     };
 
     onSkillOk() {
-        var skill = this._skillWindow.item();
-        var action = BattleManager.inputtingAction();
-        action.setSkill(skill.id);
-        BattleManager.actor().setLastBattleSkill(skill);
+        let skill = this._skillWindow.item();
+        let action = BattleManager.inputtingAction();
+
+        if (!skill.isItem) {
+            action.setSkill(skill.id);
+            BattleManager.actor().setLastBattleSkill(skill);
+        } else {
+            action.setItem(skill.id);
+            $gameParty.setLastItem(skill);
+        }
         this.onSelectAction();
     };
 
-    onSkillCancel() {
-        this._skillWindow.hide();
-        this._skillBar.show();
-    };
-
-    onItemOk() {
-        var item = this._itemWindow.item();
-        var action = BattleManager.inputtingAction();
-        action.setItem(item.id);
-        $gameParty.setLastItem(item);
-        this.onSelectAction();
-    };
-
-    onItemCancel() {
-        this._itemWindow.hide();
-        this._skillBar.show();
+    onSkillSelectCancel() {
+        this._skillWindow.activate();
+        this._actorWindow.hide();
+        this._enemyWindow.hide();
+        this.selectPreviousCommand();
     };
 
     onSelectAction() {
-        var action = BattleManager.inputtingAction();
+        let action = BattleManager.inputtingAction();
         this._skillWindow.hide();
-        this._itemWindow.hide();
         if (!action.needsSelection()) {
             this.selectNextCommand();
         } else if (action.isForOpponent()) {
@@ -2651,9 +2942,7 @@ class Scene_Battle extends Scene_Base {
     };
 
     endCommandSelection() {
-        this._skillBar.deactivate();
-        this._skillBar.close();
-        this._statusWindow.deselect();
+        this._menuBar.deactivate();
     };
 }
 
@@ -2680,7 +2969,7 @@ class Scene_Gameover extends Scene_Base {
 
     update() {
         if (this.isActive() && !this.isBusy() && this.isTriggered()) {
-            this.gotoTitle();
+            this.goquit();
         }
         super.update();
     };
@@ -2711,22 +3000,7 @@ class Scene_Gameover extends Scene_Base {
         return Input.isTriggered('ok') || TouchInput.isTriggered();
     };
 
-    gotoTitle() {
+    goquit() {
         SceneManager.goto(Scene_Title);
     };
 }
-
-/*
-Cần 2 sub-stage
-1 fixed là Game UI
-và 1 camera là Scene
- */
-
-/*
-PIXI.utils.TextureCache['source'];
-renderer.view === canvas;
-
-PIXI.loader
-  .add("images/anyImage.png")
-  .load(setup);
- */

@@ -1,5 +1,5 @@
 //=============================================================================
-// rpg_sprites.js v1.5.1
+// _sprites.js
 //=============================================================================
 
 'use strict';
@@ -39,10 +39,10 @@ class Sprite_Base extends Sprite {
 
     updateAnimationSprites() {
         if (this._animationSprites.length > 0) {
-            var sprites = this._animationSprites.clone();
+            let sprites = this._animationSprites.clone();
             this._animationSprites = [];
-            for (var i = 0; i < sprites.length; i++) {
-                var sprite = sprites[i];
+            for (let i = 0; i < sprites.length; i++) {
+                let sprite = sprites[i];
                 if (sprite.isPlaying()) {
                     this._animationSprites.push(sprite);
                 } else {
@@ -53,9 +53,12 @@ class Sprite_Base extends Sprite {
     };
 
     startAnimation(animation, mirror, delay) {
-        var sprite = new Sprite_Animation();
+        let sprite = new Sprite_Animation();
         sprite.setup(this._effectTarget, animation, mirror, delay);
         this.parent.addChild(sprite);
+        if (!!BattleManager._spriteset) {
+            sprite.parentGroup = BattleManager._spriteset._overlayGroup;
+        }
         this._animationSprites.push(sprite);
     };
 
@@ -67,7 +70,7 @@ class Sprite_Base extends Sprite {
     // Added methods
 
     drawGraphic(type, obj) {
-        var base = new PIXI.Graphics();
+        let base = new PIXI.Graphics();
         switch (type) {
             case "circle":
                 base.lineStyle(obj.lineWidth, obj.lineColor, obj.lineAlpha);
@@ -92,8 +95,8 @@ class Sprite_Base extends Sprite {
     };
 
     drawComp(type, obj) {
-        var base = this.drawGraphic(type, obj);
-        var comp = new PIXI.Sprite(base.generateCanvasTexture());
+        let base = this.drawGraphic(type, obj);
+        let comp = new PIXI.Sprite(base.generateCanvasTexture());
         type === "circle" ? comp.radius = obj.radius : null;
         comp._frame = comp.getBounds();
         return comp;
@@ -103,9 +106,9 @@ class Sprite_Base extends Sprite {
         return new PIXI.Text(text, obj);
     };
 
-    makeFrames(sheet, index, frameNumber, framePerRow, width, height, offsetX, offsetY){
-        var rectangle, frame, frames = [];
-        for (var i = 0; i < frameNumber; i++) {
+    makeFrames(sheet, index, frameNumber, framePerRow, width, height, offsetX, offsetY) {
+        let rectangle, frame, frames = [];
+        for (let i = 0; i < frameNumber; i++) {
             rectangle = new Rectangle((i % framePerRow) * width + offsetX
                 , Math.floor(i / framePerRow) * height + offsetY, width, height);
             frame = new PIXI.Texture(TextureCache["img/images/" + sheet + index + ".png"], rectangle);
@@ -146,7 +149,7 @@ class Sprite_Button extends Sprite {
     };
 
     updateFrame() {
-        var frame;
+        let frame;
         if (this._touching) {
             frame = this._hotFrame;
         } else {
@@ -176,7 +179,7 @@ class Sprite_Button extends Sprite {
     };
 
     processTouch() {
-        if (this.isActive()) {
+        if (this.worldVisible) {
             if (TouchInput.isTriggered() && this.isButtonTouched()) {
                 this._touching = true;
             }
@@ -193,25 +196,14 @@ class Sprite_Button extends Sprite {
         }
     };
 
-    isActive() {
-        var node = this;
-        while (node) {
-            if (!node.visible) {
-                return false;
-            }
-            node = node.parent;
-        }
-        return true;
-    };
-
     isButtonTouched() {
-        var x = this.canvasToLocalX(TouchInput.x);
-        var y = this.canvasToLocalY(TouchInput.y);
+        let x = this.globalToLocalX(TouchInput.x) + (this.anchor.x * this.width);
+        let y = this.globalToLocalY(TouchInput.y) + (this.anchor.y * this.height);
         return x >= 0 && y >= 0 && x < this.width && y < this.height;
     };
 
-    canvasToLocalX(x) {
-        var node = this;
+    globalToLocalX(x) {
+        let node = this;
         while (node) {
             x -= node.x;
             node = node.parent;
@@ -219,8 +211,8 @@ class Sprite_Button extends Sprite {
         return x;
     };
 
-    canvasToLocalY(y) {
-        var node = this;
+    globalToLocalY(y) {
+        let node = this;
         while (node) {
             y -= node.y;
             node = node.parent;
@@ -277,8 +269,8 @@ class Sprite_Character extends Sprite_Base {
     };
 
     tilesetBitmap(tileId) {
-        var tileset = $gameMap.tileset();
-        var setNumber = 5 + Math.floor(tileId / 256);
+        let tileset = $gameMap.tileset();
+        let setNumber = 5 + Math.floor(tileId / 256);
         return ImageManager.loadTileset(tileset.tilesetNames[setNumber]);
     };
 
@@ -321,21 +313,21 @@ class Sprite_Character extends Sprite_Base {
     };
 
     updateTileFrame() {
-        var pw = this.patternWidth();
-        var ph = this.patternHeight();
-        var sx = (Math.floor(this._tileId / 128) % 2 * 8 + this._tileId % 8) * pw;
-        var sy = Math.floor(this._tileId % 256 / 8) % 16 * ph;
+        let pw = this.patternWidth();
+        let ph = this.patternHeight();
+        let sx = (Math.floor(this._tileId / 128) % 2 * 8 + this._tileId % 8) * pw;
+        let sy = Math.floor(this._tileId % 256 / 8) % 16 * ph;
         this.setFrame(sx, sy, pw, ph);
     };
 
     updateCharacterFrame() {
-        var pw = this.patternWidth();
-        var ph = this.patternHeight();
-        var sx = (this.characterBlockX() + this.characterPatternX()) * pw;
-        var sy = (this.characterBlockY() + this.characterPatternY()) * ph;
+        let pw = this.patternWidth();
+        let ph = this.patternHeight();
+        let sx = (this.characterBlockX() + this.characterPatternX()) * pw;
+        let sy = (this.characterBlockY() + this.characterPatternY()) * ph;
         this.updateHalfBodySprites();
         if (this._bushDepth > 0) {
-            var d = this._bushDepth;
+            let d = this._bushDepth;
             this._upperBody.setFrame(sx, sy, pw, ph - d);
             this._lowerBody.setFrame(sx, sy + ph - d, pw, d);
             this.setFrame(sx, sy, 0, ph);
@@ -348,7 +340,7 @@ class Sprite_Character extends Sprite_Base {
         if (this._isBigCharacter) {
             return 0;
         } else {
-            var index = this._character.characterIndex();
+            let index = this._character.characterIndex();
             return index % 4 * 3;
         }
     };
@@ -357,7 +349,7 @@ class Sprite_Character extends Sprite_Base {
         if (this._isBigCharacter) {
             return 0;
         } else {
-            var index = this._character.characterIndex();
+            let index = this._character.characterIndex();
             return Math.floor(index / 4) * 4;
         }
     };
@@ -398,10 +390,10 @@ class Sprite_Character extends Sprite_Base {
             this._upperBody.y = -this._bushDepth;
             this._lowerBody.bitmap = this.bitmap;
             this._lowerBody.visible = true;
-            this._upperBody.setBlendColor(this.getBlendColor());
-            this._lowerBody.setBlendColor(this.getBlendColor());
-            this._upperBody.setColorTone(this.getColorTone());
-            this._lowerBody.setColorTone(this.getColorTone());
+            this._upperBody.blendColor = this.blendColor;
+            this._lowerBody.blendColor = this.blendColor;
+            this._upperBody.colorTone = this.colorTone;
+            this._lowerBody.colorTone = this.colorTone;
         } else if (this._upperBody) {
             this._upperBody.visible = false;
             this._lowerBody.visible = false;
@@ -448,7 +440,7 @@ class Sprite_Character extends Sprite_Base {
 
     setupAnimation() {
         if (this._character.animationId() > 0) {
-            var animation = $dataAnimations[this._character.animationId()];
+            let animation = $dataAnimations[this._character.animationId()];
             this.startAnimation(animation, false, 0);
             this._character.startAnimation();
         }
@@ -498,19 +490,16 @@ class Sprite_Character extends Sprite_Base {
 // The superclass of Sprite_Actor and Sprite_Enemy.
 
 class Sprite_Battler extends Sprite_Base {
-    //-----------------------------------------------------------------------------
-    //Initialize
-    constructor(battler, enemy) {
+    constructor(battler) {
         super();
-        this.initMembers(enemy);
+        this.initMembers();
         this.setBattler(battler);
     }
 
-    initMembers(enemy) {
+    initMembers() {
         this.anchor.x = 0.5;
         this.anchor.y = 1;
         this._battler = null;
-        this._isEnemy = enemy;
         this._damages = [];
         this._homeX = 0;
         this._homeY = 0;
@@ -528,9 +517,8 @@ class Sprite_Battler extends Sprite_Base {
         this._battlerHue = 0;
         this._effectType = null;
         this._effectDuration = 0;
-        this._shake = 0;
-        this._scaled = false;
-        this._needMirror = false;
+        this._needsMirror = false;
+        this._mirror = false;
         this._retreating = false;
         this.createShadowSprite();
         this.createWeaponSprite();
@@ -539,7 +527,7 @@ class Sprite_Battler extends Sprite_Base {
     };
 
     setBattler(battler) {
-        var changed = (battler !== this._battler);
+        let changed = (battler !== this._battler);
         if (changed) {
             this._battler = battler;
             this.startEntryMotion();
@@ -585,11 +573,11 @@ class Sprite_Battler extends Sprite_Base {
     };
 
     damageOffsetY() {
-        return -8;
+        return 0;
     };
 
-    canvasToLocalX(x) {
-        var node = this;
+    globalToLocalX(x) {
+        let node = this;
         while (node) {
             x -= node.x;
             node = node.parent;
@@ -597,8 +585,8 @@ class Sprite_Battler extends Sprite_Base {
         return x;
     };
 
-    canvasToLocalY(y) {
-        var node = this;
+    globalToLocalY(y) {
+        let node = this;
         while (node) {
             y -= node.y;
             node = node.parent;
@@ -613,41 +601,38 @@ class Sprite_Battler extends Sprite_Base {
             this.updateAnimation();
             this.updateDamagePopup();
             this.updateSelectionEffect();
-            this.updateMotion();
-            if (this._isEnemy) this.updateEffect();
-            this.processStatusBar();
+            // Reserved: this.updateMotion();
+            this.updateEffect();
         } else {
             this.bitmap = null;
         }
         this.updateShadow();
     };
 
-    processStatusBar() {
-        if (TouchInput.isTriggered() && this.isSpriteTouched()) {
-            this._hovering = true;
-        }
-
-        if (this._hovering) {
-            if (!this._isStatusUpdated) {
-                this.updateStatusBar();
-                this._isStatusUpdated = true;
-            }
-            if (!this.isSpriteTouched()) {
-                this._hovering = false;
-                this._isStatusUpdated = false;
-            }
-        }
-    };
-
     isSpriteTouched() {
-        // 33 và 69 là biện pháp tạm thời;
-        var x = this.canvasToLocalX(TouchInput.x) + 33;
-        var y = this.canvasToLocalY(TouchInput.y) + 69;
-        return x >= 0 && y >= 0 && x < this.cellWidth() && y < this.cellHeight();
+        let width = this.cellWidth,
+            height = this.cellHeight,
+            x = this.globalToLocalX(TouchInput.x) + (this.anchor.x * width),
+            y = this.globalToLocalY(TouchInput.y) + (this.anchor.y * height);
+        return x >= 0 && y >= 0 && x < width && y < height;
     };
 
-    updateStatusBar() {
-        BattleManager.updateStatusBar(this._battler);
+    get sheetData() {
+        if (this._battler) {
+            return this._battler._sheetData;
+        } else {
+            return null;
+        }
+    }
+
+    get cellWidth() {
+        return this.sheetData.frames[0].frame.w;
+    }
+
+    get cellHeight() {
+        if (this._battler) {
+            return this.sheetData.frames[0].frame.h;
+        }
     }
 
     updateVisibility() {
@@ -663,24 +648,32 @@ class Sprite_Battler extends Sprite_Base {
             this.updateBitmap();
             this.updateFrame();
         }
-        this.updateMove();
+        this.updateMovement();
         this.updatePosition();
     };
 
-    updateMove() {
-        var bitmap = this._mainSprite.bitmap;
+    updateMovement() {
+        this.updateCharacterMovement();
+    };
+
+    updateCharacterMovement() {
+        let bitmap = this._mainSprite.bitmap;
         if (!bitmap || bitmap.isReady()) {
             if (this._movementDuration > 0) {
-                var d = this._movementDuration;
-                this._offsetX = (this._offsetX * (d - 1) + this._targetOffsetX) / d;
-                this._offsetY = (this._offsetY * (d - 1) + this._targetOffsetY) / d;
+                let v = Math.smoothStep(1 / this._movementDuration);
+                this._offsetX = (this._offsetX * (1 - v) + this._targetOffsetX * v);
+                this._offsetY = (this._offsetY * (1 - v) + this._targetOffsetY * v);
                 this._movementDuration--;
                 if (this._movementDuration === 0) {
                     this.onMoveEnd();
                 }
+
+                if (this.isTargetCollided()) {
+                    this.stopMovement();
+                }
             }
         }
-    };
+    }
 
     updatePosition() {
         this.x = this._homeX + this._offsetX;
@@ -694,7 +687,7 @@ class Sprite_Battler extends Sprite_Base {
     updateDamagePopup() {
         this.setupDamagePopup();
         if (this._damages.length > 0) {
-            for (var i = 0; i < this._damages.length; i++) {
+            for (let i = 0; i < this._damages.length; i++) {
                 this._damages[i].update();
             }
             if (!this._damages[0].isPlaying()) {
@@ -705,17 +698,17 @@ class Sprite_Battler extends Sprite_Base {
     };
 
     updateSelectionEffect() {
-        var target = this._effectTarget;
+        let target = this._effectTarget;
         if (this._battler.isSelected()) {
             this._selectionEffectCount++;
             if (this._selectionEffectCount % 30 < 15) {
-                target.setBlendColor([255, 255, 255, 64]);
+                target.blendColor = [255, 255, 255, 64];
             } else {
-                target.setBlendColor([0, 0, 0, 0]);
+                target.blendColor = [0, 0, 0, 0];
             }
         } else if (this._selectionEffectCount > 0) {
             this._selectionEffectCount = 0;
-            target.setBlendColor([0, 0, 0, 0]);
+            target.blendColor = [0, 0, 0, 0];
         }
     };
 
@@ -724,8 +717,9 @@ class Sprite_Battler extends Sprite_Base {
     };
 
     updateTargetPosition() {
-        var escaped = BattleManager.isEscaped() && !this._battler.isEnemy();
-        if (this._battler.isActing()) {
+        // Character methods
+        let escaped = BattleManager.isEscaped() && !this._battler.isEnemy();
+        if (this._battler.isMoving()) {
             if (escaped) {
                 if (!this._retreating) this.retreat();
             } else {
@@ -733,67 +727,41 @@ class Sprite_Battler extends Sprite_Base {
             }
         } else if (escaped) {
             if (!this._retreating) this.retreat();
-        } else if (!this.inHomePosition()) {
+        } else if (this._battler.isProjecting()) {
+            if (this._battler.isProjectileRequested()) this.startProjectileMovement(90);
+        } else if (this._battler.isDone() && !this.inHomePosition()) {
             this.stepBack();
         }
     };
 
     updateBitmap() {
-        var name = this._battler.battlerName();
+        let name = this._battler.battlerName();
         if (this._battlerName !== name) {
             this._battlerName = name;
             this._mainSprite.bitmap = ImageManager.loadSvActor(name);
+            this.initVisibility();
         }
     };
 
     updateFrame() {
-        var bitmap = this._mainSprite.bitmap;
+        let bitmap = this._mainSprite.bitmap;
         if (bitmap) {
-            this.updateScale();
-            // Anti alias and và thiếu margin làm cho sheet chồng chéo lên nhau. 9 là biện pháp tạm thời;
-            var cw = Math.floor(bitmap.width / 7) - 9;
-            var ch = Math.floor(bitmap.height / 5);
-            this._mainSprite.setFrame(0, 0, cw, ch);
+            this.updateMirror();
+            let motionIndex = this._motion ? this._motion.index : 0;
+            let j = this.sheetData.motions[motionIndex];
+            let pattern = (this._motion ? this._pattern < this._motion.patterns : false) ? this._pattern : 0;
+            let frame = this.sheetData.frames[j + pattern].frame;
+            this._mainSprite.setFrame(frame.x, frame.y, frame.w, frame.h);
         }
-        // The above code was to simplified designing UI
-        /*
-        var bitmap = this._mainSprite.bitmap;
-        if (bitmap) {
-            this.updateScale();
-            var motionIndex = this._motion ? this._motion.index : 0;
-            var pattern = (this._motion ? this._pattern < this._motion.patterns : false) ? this._pattern : 0;
-            var cw = Math.floor(bitmap.width / 7) - 9;
-            var ch = Math.floor(bitmap.height / 5);
-            var cx = pattern;
-            var cy = motionIndex % 4;
-            this._mainSprite.setFrame(cx * cw, cy * ch, cw, ch);
-        }
-        */
     };
 
-    updateScale() {
-        if (!this._scaled && this._mainSprite.bitmap.width) this.setScale();
-        if (this._needMirror) {
+    updateMirror() {
+        if (this._needsMirror) {
             this.scale.x *= -1;
-            this._needMirror = false;
+            this._needsMirror = false;
+            this._mirror = !this._mirror;
         }
     };
-
-    setScale() {
-        //The width of the sprite after scaled: 66
-        var ratio = 66 / (this._mainSprite.bitmap.width / 7);
-        this.scale.x *= ratio;
-        this.scale.y *= ratio;
-        this._scaled = true;
-    };
-
-    cellWidth() {
-        return this._mainSprite.bitmap.width * this.scale.x / 7;
-    }
-
-    cellHeight() {
-        return this._mainSprite.bitmap.height * this.scale.y / 5;
-    }
 
     updateMotion() {
         this.setupMotion();
@@ -822,25 +790,15 @@ class Sprite_Battler extends Sprite_Base {
         return 8;
     };
 
-    updateShake() {
-        this.x += this._shake;
-    };
-
-    isMotionDone() {
-    };
-
-    //-----------------------------------------------------------------------------
-    //Setup
-
     setupAnimation() {
         while (this._battler.isAnimationRequested()) {
-            var data = this._battler.shiftAnimation();
-            var animation = $dataAnimations[data.animationId];
-            var mirror = data.mirror;
-            var delay = animation.position === 3 ? 0 : data.delay;
+            let data = this._battler.shiftAnimation();
+            let animation = $dataAnimations[data.animationId];
+            let mirror = data.mirror;
+            let delay = animation.position === 3 ? 0 : data.delay;
             this.startAnimation(animation, mirror, delay);
-            for (var i = 0; i < this._animationSprites.length; i++) {
-                var sprite = this._animationSprites[i];
+            for (let i = 0; i < this._animationSprites.length; i++) {
+                let sprite = this._animationSprites[i];
                 sprite.visible = this._battler.isSpriteVisible();
             }
         }
@@ -849,11 +807,12 @@ class Sprite_Battler extends Sprite_Base {
     setupDamagePopup() {
         if (this._battler.isDamagePopupRequested()) {
             if (this._battler.isSpriteVisible()) {
-                var sprite = new Sprite_Damage();
+                let sprite = new Sprite_Damage();
                 sprite.x = this.x + this.damageOffsetX();
                 sprite.y = this.y + this.damageOffsetY();
                 sprite.setup(this._battler);
                 this._damages.push(sprite);
+                sprite.parentGroup = BattleManager._spriteset._overlayGroup;
                 this.parent.addChild(sprite);
             }
             this._battler.clearDamagePopup();
@@ -861,17 +820,58 @@ class Sprite_Battler extends Sprite_Base {
         }
     };
 
-    startMove(x, y, duration) {
+    startMovement(x, y, duration) {
         if (this._targetOffsetX !== x || this._targetOffsetY !== y) {
+            this._movementDuration = this.getMovementDuration(x, y);
             this._targetOffsetX = x;
             this._targetOffsetY = y;
-            this._movementDuration = duration;
-            if (duration === 0) {
+            if (!duration) {
                 this._offsetX = x;
                 this._offsetY = y;
             }
         }
     };
+
+    startProjectileMovement(duration) {
+        let position = this.getTargetHomePosition();
+        let proj = new Sprite_Projectile(this._homeX, this._homeY);
+        this.parent.addChild(proj);
+        ProjectileManager.add(proj, position[0], position[1], duration);
+        this._battler._needsProjectile = false;
+    }
+
+    getMovementDuration(x, y) {
+        return Math.floor(this.getTargetDistance(x, y) / this.getMovementSpeed());
+    }
+
+    getMovementSpeed() {
+        return this._battler.msp || 1;
+    }
+
+    getTargetDistance(x, y) {
+        return Math.sqrt((x - this._targetOffsetX) ** 2 + (y - this._targetOffsetY) ** 2);
+    }
+
+    getTargetHomePosition() {
+        return BattleManager.targetHomePosition();
+    }
+
+    getTargetMeasurements() {
+        return BattleManager.targetMeasurements();
+    }
+
+    getTargetFrame() {
+        let position = this.getTargetHomePosition();
+        let measurements = this.getTargetMeasurements();
+        if (!!position || !!measurements) {
+            return {
+                x: position[0],
+                y: position[1],
+                width: measurements[0],
+                height: measurements[1]
+            };
+        }
+    }
 
     isMoving() {
         return this._movementDuration > 0;
@@ -881,13 +881,29 @@ class Sprite_Battler extends Sprite_Base {
         return this._offsetX === 0 && this._offsetY === 0;
     };
 
+    isTargetCollided() {
+        if (!!this.getTargetFrame()) {
+            return Physics.isSpriteCollided(this, this.getTargetFrame());
+        }
+    }
+
     setSquare(squares, index) {
-        // The x, y position of a square.
-        var sx, sy;
-        sx = squares.x + squares.children[index].x;
-        sy = squares.y + squares.children[index].y;
+        let sx = squares.squareX(index),
+            sy = squares.squareY(index);
         this.setHome(sx, sy);
+        this.setBattlerHome(sx, sy);
+        this.setBattlerMeasurements();
     };
+
+    setBattlerHome(x, y) {
+        this._battler._homeX = x;
+        this._battler._homeY = y;
+    }
+
+    setBattlerMeasurements() {
+        this._battler._width = this.cellWidth;
+        this._battler._height = this.cellHeight;
+    }
 
     setupMotion() {
         if (this._battler.isMotionRequested()) {
@@ -904,7 +920,7 @@ class Sprite_Battler extends Sprite_Base {
     };
 
     startMotion(motionType) {
-        var newMotion = Sprite_Battler.MOTIONS[motionType];
+        let newMotion = Sprite_Battler.MOTIONS[motionType];
         if (this._motion !== newMotion) {
             this._motion = newMotion;
             this._motionCount = 0;
@@ -913,13 +929,13 @@ class Sprite_Battler extends Sprite_Base {
     };
 
     refreshMotion() {
-        var actor = this._battler;
-        var motionGuard = Sprite_Battler.MOTIONS['guard'];
+        let actor = this._battler;
+        let motionGuard = Sprite_Battler.MOTIONS['guard'];
         if (actor) {
             if (this._motion === motionGuard && !BattleManager.isInputting()) {
                 return;
             }
-            var stateMotion = actor.stateMotionIndex();
+            let stateMotion = actor.stateMotionIndex();
             if (actor.isInputting() || actor.isActing()) {
                 this.startMotion('run');
             } else if (stateMotion === 3) {
@@ -930,8 +946,6 @@ class Sprite_Battler extends Sprite_Base {
                 this.startMotion('guard');
             } else if (actor.isDying()) {
                 this.startMotion('dying');
-            } else if (actor.isUndecided()) {
-                this.startMotion('idle');
             } else {
                 this.startMotion('idle');
             }
@@ -942,25 +956,38 @@ class Sprite_Battler extends Sprite_Base {
         if (this._battler) {
             this.refreshMotion();
             this.startMotion('idle');
-            this.startMove(0, 0, 0);
+            this.startMovement(0, 0, false);
         }
     };
 
     stepForward() {
-        if (!this._isEnemy) {
-            this.startMove(48, 0, 12)
-        } else this.startMove(-48, 0, 12);
+        let position = this.getTargetHomePosition();
+        let tx = position[0], ty = position[1];
+        this.startMovement(tx - this._homeX, ty - this._homeY, true);
     };
 
     stepBack() {
-        this.startMove(0, 0, 12);
+        this.startMovement(0, 0, true);
     };
 
+    stopMovement() {
+        this.startMovement(this._offsetX, this._offsetY, false);
+    }
+
+    stopProjectileMovement() {
+        //this._projectile.x = 0;
+        //this._projectile.y = 0;
+    }
+
     retreat() {
-        this._needMirror = true;
+        this.requestMirror();
         this._retreating = true;
-        this.startMove(-400, 0, 30);
+        this.startMovement(-400, 0, true);
     };
+
+    requestMirror() {
+        this._needsMirror = true;
+    }
 
     onMoveEnd() {
         if (!BattleManager.isBattleEnd()) {
@@ -968,8 +995,11 @@ class Sprite_Battler extends Sprite_Base {
         }
     };
 
-    //-----------------------------------------------------------------------------
-    //Special Effects
+    onProjectileMovementEnd() {
+        this._projectile.visible = false;
+        this._projectile.x = this._homeX;
+        this._projectile.y = this._homeY;
+    }
 
     initVisibility() {
         this._appeared = this._battler.isAlive();
@@ -1089,15 +1119,14 @@ class Sprite_Battler extends Sprite_Base {
     };
 
     revertToNormal() {
-        this._shake = 0;
         this.blendMode = 0;
         this.opacity = 255;
-        this.setBlendColor([0, 0, 0, 0]);
+        this.blendColor = [0, 0, 0, 0];
     };
 
     updateWhiten() {
-        var alpha = 128 - (16 - this._effectDuration) * 10;
-        this.setBlendColor([255, 255, 255, alpha]);
+        let alpha = 128 - (16 - this._effectDuration) * 10;
+        this.blendColor = [255, 255, 255, alpha];
     };
 
     updateBlink() {
@@ -1114,15 +1143,14 @@ class Sprite_Battler extends Sprite_Base {
 
     updateCollapse() {
         this.blendMode = Graphics.BLEND_ADD;
-        this.setBlendColor([255, 128, 128, 128]);
+        this.blendColor = [255, 128, 128, 128];
         this.opacity *= this._effectDuration / (this._effectDuration + 1);
     };
 
     updateBossCollapse() {
-        this._shake = this._effectDuration % 2 * 4 - 2;
         this.blendMode = Graphics.BLEND_ADD;
         this.opacity *= this._effectDuration / (this._effectDuration + 1);
-        this.setBlendColor([255, 255, 255, 255 - this.opacity]);
+        this.blendColor = [255, 255, 255, 255 - this.opacity];
         if (this._effectDuration % 20 === 19) {
             SoundManager.playBossCollapse2();
         }
@@ -1134,32 +1162,51 @@ class Sprite_Battler extends Sprite_Base {
 }
 
 Sprite_Battler.MOTIONS = {
-    idle:       {index: 0, patterns: 7, loop: true},
-    run:        {index: 1, patterns: 6, loop: false},
-    back:       {index: 2, patterns: 3, loop: false},
-    guard:      {index: 3, patterns: 8, loop: false},
-    evade:      {index: 4, patterns: 7, loop: false},
+    idle: {index: 0, patterns: 7, loop: true},
+    run: {index: 1, patterns: 3, loop: false},
+    melee: {index: 2, patterns: 5, loop: false},
+    back: {index: 3, patterns: 3, loop: false},
+    //block: {index: 4, patterns: 7, loop: false}
+    guard:      {index: 4, patterns: 7, loop: false},
+    /*evade:      {index: 4, patterns: 7, loop: false},
     damaged:    {index: 5, patterns: 7, loop: false},
     dying:      {index: 6, patterns: 7, loop: true},
     dead:       {index: 7, patterns: 7, loop: false},
-    melee:      {index: 9, patterns: 8, loop: false},
+    melee:      {index: 9, patterns: 5, loop: false},
     missile:    {index: 10, patterns: 7, loop: false},
     channel:    {index: 11, patterns: 7, loop: false},
     toss:       {index: 12, patterns: 7, loop: false},
     victory:    {index: 13, patterns: 7, loop: false},
-    asleep:     {index: 14, patterns: 7, loop: true}
+    asleep:     {index: 14, patterns: 7, loop: true}*/
 };
 
-class Sprite_Enemy extends Sprite_Battler {
-    constructor(battler, enemy) {
-        super(battler, enemy);
+class Sprite_Actor extends Sprite_Battler {
+    constructor(battler) {
+        super(battler);
     }
+
+    damageOffsetX() {
+        return -16;
+    };
+
+    damageOffsetY() {
+        return -32;
+    };
 }
 
-class Sprite_Actor extends Sprite_Battler {
-    constructor(battler, enemy) {
-        super(battler, enemy);
+class Sprite_Enemy extends Sprite_Battler {
+    constructor(battler) {
+        super(battler);
+        this.requestMirror();
     }
+
+    damageOffsetX() {
+        return 16;
+    };
+
+    damageOffsetY() {
+        return -32;
+    };
 }
 
 //-----------------------------------------------------------------------------
@@ -1209,7 +1256,7 @@ class Sprite_Animation extends Sprite {
 
     remove() {
         if (this.parent && this.parent.removeChild(this)) {
-            this._target.setBlendColor([0, 0, 0, 0]);
+            this._target.blendColor = [0, 0, 0, 0];
             this._target.show();
         }
     };
@@ -1234,15 +1281,15 @@ class Sprite_Animation extends Sprite {
 
     updateFlash() {
         if (this._flashDuration > 0) {
-            var d = this._flashDuration--;
+            let d = this._flashDuration--;
             this._flashColor[3] *= (d - 1) / d;
-            this._target.setBlendColor(this._flashColor);
+            this._target.blendColor = this._flashColor;
         }
     };
 
     updateScreenFlash() {
         if (this._screenFlashDuration > 0) {
-            var d = this._screenFlashDuration--;
+            let d = this._screenFlashDuration--;
             if (this._screenFlashSprite) {
                 this._screenFlashSprite.x = -this.absoluteX();
                 this._screenFlashSprite.y = -this.absoluteY();
@@ -1253,8 +1300,8 @@ class Sprite_Animation extends Sprite {
     };
 
     absoluteX() {
-        var x = 0;
-        var object = this;
+        let x = 0;
+        let object = this;
         while (object) {
             x += object.x;
             object = object.parent;
@@ -1263,8 +1310,8 @@ class Sprite_Animation extends Sprite {
     };
 
     absoluteY() {
-        var y = 0;
-        var object = this;
+        let y = 0;
+        let object = this;
         while (object) {
             y += object.y;
             object = object.parent;
@@ -1286,10 +1333,10 @@ class Sprite_Animation extends Sprite {
     };
 
     loadBitmaps() {
-        var name1 = this._animation.animation1Name;
-        var name2 = this._animation.animation2Name;
-        var hue1 = this._animation.animation1Hue;
-        var hue2 = this._animation.animation2Hue;
+        let name1 = this._animation.animation1Name;
+        let name2 = this._animation.animation2Name;
+        let hue1 = this._animation.animation1Hue;
+        let hue2 = this._animation.animation2Hue;
         this._bitmap1 = ImageManager.loadAnimation(name1, hue1);
         this._bitmap2 = ImageManager.loadAnimation(name2, hue2);
     };
@@ -1318,8 +1365,8 @@ class Sprite_Animation extends Sprite {
 
     createCellSprites() {
         this._cellSprites = [];
-        for (var i = 0; i < 16; i++) {
-            var sprite = new Sprite();
+        for (let i = 0; i < 16; i++) {
+            let sprite = new Sprite();
             sprite.anchor.x = 0.5;
             sprite.anchor.y = 0.5;
             this._cellSprites.push(sprite);
@@ -1351,8 +1398,8 @@ class Sprite_Animation extends Sprite {
             this.x = this.parent.width / 2;
             this.y = this.parent.height / 2;
         } else {
-            var parent = this._target.parent;
-            var grandparent = parent ? parent.parent : null;
+            let parent = this._target.parent;
+            let grandparent = parent ? parent.parent : null;
             this.x = this._target.x;
             this.y = this._target.y;
             if (this.parent === grandparent) {
@@ -1369,7 +1416,7 @@ class Sprite_Animation extends Sprite {
 
     updateFrame() {
         if (this._duration > 0) {
-            var frameIndex = this.currentFrameIndex();
+            let frameIndex = this.currentFrameIndex();
             this.updateAllCellSprites(this._animation.frames[frameIndex]);
             this._animation.timings.forEach(function (timing) {
                 if (timing.frame === frameIndex) {
@@ -1385,8 +1432,8 @@ class Sprite_Animation extends Sprite {
     };
 
     updateAllCellSprites(frame) {
-        for (var i = 0; i < this._cellSprites.length; i++) {
-            var sprite = this._cellSprites[i];
+        for (let i = 0; i < this._cellSprites.length; i++) {
+            let sprite = this._cellSprites[i];
             if (i < frame.length) {
                 this.updateCellSprite(sprite, frame[i]);
             } else {
@@ -1396,11 +1443,11 @@ class Sprite_Animation extends Sprite {
     };
 
     updateCellSprite(sprite, cell) {
-        var pattern = cell[0];
+        let pattern = cell[0];
         if (pattern >= 0) {
-            var sx = pattern % 5 * 192;
-            var sy = Math.floor(pattern % 100 / 5) * 192;
-            var mirror = this._mirror;
+            let sx = pattern % 5 * 192;
+            let sy = Math.floor(pattern % 100 / 5) * 192;
+            let mirror = this._mirror;
             sprite.bitmap = pattern < 100 ? this._bitmap1 : this._bitmap2;
             sprite.setFrame(sx, sy, 192, 192);
             sprite.x = cell[1];
@@ -1427,7 +1474,7 @@ class Sprite_Animation extends Sprite {
     };
 
     processTimingData(timing) {
-        var duration = timing.flashDuration * this._rate;
+        let duration = timing.flashDuration * this._rate;
         switch (timing.flashScope) {
             case 1:
                 this.startFlash(timing.flashColor, duration);
@@ -1481,7 +1528,7 @@ class Sprite_Damage extends Sprite {
     }
 
     setup(target) {
-        var result = target.result();
+        let result = target.result();
         if (result.missed || result.evaded) {
             this.createMiss();
         } else if (result.hpAffected) {
@@ -1508,21 +1555,21 @@ class Sprite_Damage extends Sprite {
     };
 
     createMiss() {
-        var w = this.digitWidth();
-        var h = this.digitHeight();
-        var sprite = this.createChildSprite();
+        let w = this.digitWidth();
+        let h = this.digitHeight();
+        let sprite = this.createChildSprite();
         sprite.setFrame(0, 4 * h, 4 * w, h);
         sprite.dy = 0;
     };
 
     createDigits(baseRow, value) {
-        var string = Math.abs(value).toString();
-        var row = baseRow + (value < 0 ? 1 : 0);
-        var w = this.digitWidth();
-        var h = this.digitHeight();
-        for (var i = 0; i < string.length; i++) {
-            var sprite = this.createChildSprite();
-            var n = Number(string[i]);
+        let string = Math.abs(value).toString();
+        let row = baseRow + (value < 0 ? 1 : 0);
+        let w = this.digitWidth();
+        let h = this.digitHeight();
+        for (let i = 0; i < string.length; i++) {
+            let sprite = this.createChildSprite();
+            let n = Number(string[i]);
             sprite.setFrame(n * w, row * h, w, h);
             sprite.x = (i - (string.length - 1) / 2) * w;
             sprite.dy = -i;
@@ -1530,7 +1577,7 @@ class Sprite_Damage extends Sprite {
     };
 
     createChildSprite() {
-        var sprite = new Sprite();
+        let sprite = new Sprite();
         sprite.bitmap = this._damageBitmap;
         sprite.anchor.x = 0.5;
         sprite.anchor.y = 1;
@@ -1544,7 +1591,7 @@ class Sprite_Damage extends Sprite {
         super.update();
         if (this._duration > 0) {
             this._duration--;
-            for (var i = 0; i < this.children.length; i++) {
+            for (let i = 0; i < this.children.length; i++) {
                 this.updateChild(this.children[i]);
             }
         }
@@ -1560,12 +1607,12 @@ class Sprite_Damage extends Sprite {
             sprite.dy *= -0.6;
         }
         sprite.y = Math.round(sprite.ry);
-        sprite.setBlendColor(this._flashColor);
+        sprite.blendColor = this._flashColor;
     };
 
     updateFlash() {
         if (this._flashDuration > 0) {
-            var d = this._flashDuration--;
+            let d = this._flashDuration--;
             this._flashColor[3] *= (d - 1) / d;
         }
     };
@@ -1626,7 +1673,7 @@ class Sprite_StateIcon extends Sprite {
     };
 
     updateIcon() {
-        var icons = [];
+        let icons = [];
         if (this._battler && this._battler.isAlive()) {
             icons = this._battler.allIcons();
         }
@@ -1643,10 +1690,10 @@ class Sprite_StateIcon extends Sprite {
     };
 
     updateFrame() {
-        var pw = Sprite_StateIcon._iconWidth;
-        var ph = Sprite_StateIcon._iconHeight;
-        var sx = this._iconIndex % 16 * pw;
-        var sy = Math.floor(this._iconIndex / 16) * ph;
+        let pw = Sprite_StateIcon._iconWidth;
+        let ph = Sprite_StateIcon._iconHeight;
+        let sx = this._iconIndex % 16 * pw;
+        let sy = Math.floor(this._iconIndex / 16) * ph;
         this.setFrame(sx, sy, pw, ph);
     };
 }
@@ -1708,10 +1755,10 @@ class Sprite_StateOverlay extends Sprite_Base {
 
     updateFrame() {
         if (this._overlayIndex > 0) {
-            var w = 96;
-            var h = 96;
-            var sx = this._pattern * w;
-            var sy = (this._overlayIndex - 1) * h;
+            let w = 96;
+            let h = 96;
+            let sx = this._pattern * w;
+            let sy = (this._overlayIndex - 1) * h;
             this.setFrame(sx, sy, w, h);
         } else {
             this.setFrame(0, 0, 0, 0);
@@ -1769,7 +1816,7 @@ class Sprite_Weapon extends Sprite_Base {
     };
 
     loadBitmap() {
-        var pageId = Math.floor((this._weaponImageId - 1) / 12) + 1;
+        let pageId = Math.floor((this._weaponImageId - 1) / 12) + 1;
         if (pageId >= 1) {
             this.bitmap = ImageManager.loadSystem('Weapons' + pageId);
         } else {
@@ -1779,11 +1826,11 @@ class Sprite_Weapon extends Sprite_Base {
 
     updateFrame() {
         if (this._weaponImageId > 0) {
-            var index = (this._weaponImageId - 1) % 12;
-            var w = 96;
-            var h = 64;
-            var sx = (Math.floor(index / 6) * 3 + this._pattern) * w;
-            var sy = Math.floor(index % 6) * h;
+            let index = (this._weaponImageId - 1) % 12;
+            let w = 96;
+            let h = 64;
+            let sx = (Math.floor(index / 6) * 3 + this._pattern) * w;
+            let sy = Math.floor(index % 6) * h;
             this.setFrame(sx, sy, w, h);
         } else {
             this.setFrame(0, 0, 0, 0);
@@ -1794,6 +1841,79 @@ class Sprite_Weapon extends Sprite_Base {
         return this._weaponImageId > 0;
     };
 }
+
+//-----------------------------------------------------------------------------
+// Sprite_Projectile
+//
+// The sprite for displaying a projectile, including bolts, arrows, bullets and energy ball.
+
+class Sprite_Projectile extends PIXI.Sprite {
+    constructor(x, y) {
+        super(PIXI.Texture.fromImage('img/system/Arrow1.png'));
+        this.position.set(x, y);
+        this._targetX = NaN;
+        this._targetY = NaN;
+        this._needsGC = false;
+        this.stop();
+    }
+
+    setTarget(x, y, duration) {
+        this._targetX = x;
+        this._targetY = y;
+        this._movementDuration = duration;
+    }
+
+    start() {
+        this.active = true;
+        this.visible = true;
+    }
+
+    stop() {
+        this.active = false;
+        this.visible = false;
+    }
+
+    update() {
+        if (this.active) {
+            this.updateMovement();
+        }
+    }
+
+    updateMovement() {
+        if (this._movementDuration > 0) {
+            let v = 1 / this._movementDuration;
+            this.visible = true;
+            this.x = (this.x * (1 - v) + this._targetX * v) | 0;
+            this.y = (this.y * (1 - v) + this._targetY * v) | 0;
+            this._movementDuration--;
+
+            if (this._movementDuration === 0) {
+                this.stop();
+                this.onMovementEnd();
+            }
+        }
+    }
+
+    onMovementEnd() {
+        this._needsGC = true;
+
+    }
+
+    terminate() {
+        this.parent.removeChild(this);
+    }
+
+    static _createBaseTexture() {
+        if (!this._texture) {
+            let base = new PIXI.Graphics();
+            base.beginFill(0xffffff);
+            base.drawRect(0, 0, 64, 16);
+            base.endFill();
+            this._texture = base.generateCanvasTexture();
+        }
+    }
+}
+Sprite_Projectile._texture = null;
 
 //-----------------------------------------------------------------------------
 // Sprite_Balloon
@@ -1836,10 +1956,10 @@ class Sprite_Balloon extends Sprite_Base {
     };
 
     updateFrame() {
-        var w = 48;
-        var h = 48;
-        var sx = this.frameIndex() * w;
-        var sy = (this._balloonId - 1) * h;
+        let w = 48;
+        let h = 48;
+        let sx = this.frameIndex() * w;
+        let sy = (this._balloonId - 1) * h;
         this.setFrame(sx, sy, w, h);
     };
 
@@ -1852,7 +1972,7 @@ class Sprite_Balloon extends Sprite_Base {
     };
 
     frameIndex() {
-        var index = (this._duration - this.waitTime()) / this.speed();
+        let index = (this._duration - this.waitTime()) / this.speed();
         return 7 - Math.max(Math.floor(index), 0);
     };
 
@@ -1892,9 +2012,9 @@ class Sprite_Picture extends Sprite {
     };
 
     updateBitmap() {
-        var picture = this.picture();
+        let picture = this.picture();
         if (picture) {
-            var pictureName = picture.name();
+            let pictureName = picture.name();
             if (this._pictureName !== pictureName) {
                 this._pictureName = pictureName;
                 this.loadBitmap();
@@ -1908,7 +2028,7 @@ class Sprite_Picture extends Sprite {
     };
 
     updateOrigin() {
-        var picture = this.picture();
+        let picture = this.picture();
         if (picture.origin() === 0) {
             this.anchor.x = 0;
             this.anchor.y = 0;
@@ -1919,19 +2039,19 @@ class Sprite_Picture extends Sprite {
     };
 
     updatePosition() {
-        var picture = this.picture();
+        let picture = this.picture();
         this.x = Math.floor(picture.x());
         this.y = Math.floor(picture.y());
     };
 
     updateScale() {
-        var picture = this.picture();
+        let picture = this.picture();
         this.scale.x = picture.scaleX() / 100;
         this.scale.y = picture.scaleY() / 100;
     };
 
     updateTone() {
-        var picture = this.picture();
+        let picture = this.picture();
         if (picture.tone()) {
             this.setColorTone(picture.tone());
         } else {
@@ -1940,7 +2060,7 @@ class Sprite_Picture extends Sprite {
     };
 
     updateOther() {
-        var picture = this.picture();
+        let picture = this.picture();
         this.opacity = picture.opacity();
         this.blendMode = picture.blendMode();
         this.rotation = picture.angle() * Math.PI / 180;
@@ -1984,16 +2104,16 @@ class Sprite_Timer extends Sprite {
     };
 
     redraw() {
-        var text = this.timerText();
-        var width = this.bitmap.width;
-        var height = this.bitmap.height;
+        let text = this.timerText();
+        let width = this.bitmap.width;
+        let height = this.bitmap.height;
         this.bitmap.clear();
         this.bitmap.drawText(text, 0, 0, width, height, 'center');
     };
 
     timerText() {
-        var min = Math.floor(this._seconds / 60) % 60;
-        var sec = this._seconds % 60;
+        let min = Math.floor(this._seconds / 60) % 60;
+        let sec = this._seconds % 60;
         return min.padZero(2) + ':' + sec.padZero(2);
     };
 
@@ -2032,8 +2152,8 @@ class Sprite_Destination extends Sprite {
     };
 
     createBitmap() {
-        var tileWidth = $gameMap.tileWidth();
-        var tileHeight = $gameMap.tileHeight();
+        let tileWidth = $gameMap.tileWidth();
+        let tileHeight = $gameMap.tileHeight();
         this.bitmap = new Bitmap(tileWidth, tileHeight);
         this.bitmap.fillAll('white');
         this.anchor.x = 0.5;
@@ -2042,10 +2162,10 @@ class Sprite_Destination extends Sprite {
     };
 
     updatePosition() {
-        var tileWidth = $gameMap.tileWidth();
-        var tileHeight = $gameMap.tileHeight();
-        var x = $gameTemp.destinationX();
-        var y = $gameTemp.destinationY();
+        let tileWidth = $gameMap.tileWidth();
+        let tileHeight = $gameMap.tileHeight();
+        let x = $gameTemp.destinationX();
+        let y = $gameTemp.destinationY();
         this.x = ($gameMap.adjustX(x) + 0.5) * tileWidth;
         this.y = ($gameMap.adjustY(y) + 0.5) * tileHeight;
     };
@@ -2067,12 +2187,15 @@ class Sprite_Destination extends Sprite {
 
 class Sprite_BaseSquare extends PIXI.Sprite {
     constructor() {
-        var bitmap = new PIXI.Graphics();
-        bitmap.lineStyle(3, 0xffffff, 1);
-        bitmap.beginFill(0xccb347);
-        bitmap.drawRoundedRect(0, 0, SceneManager._screenWidth * 0.05, SceneManager._screenWidth * 0.05 * 0.75, 10);
-        bitmap.endFill();
-        super(bitmap.generateCanvasTexture());
+        if (!Sprite_BaseSquare._texture) {
+            let bitmap = new PIXI.Graphics();
+            bitmap.lineStyle(3, 0xffffff, 1);
+            bitmap.beginFill(0xccb347);
+            bitmap.drawRoundedRect(0, 0, Sprite_BaseSquare._squareSide, Sprite_BaseSquare._squareSide * 0.75, 10);
+            bitmap.endFill();
+            Sprite_BaseSquare._texture = bitmap.generateCanvasTexture();
+        }
+        super(Sprite_BaseSquare._texture);
         this._animationCount = 0;
         this._battler = null;
         this.visible = false;
@@ -2091,8 +2214,8 @@ class Sprite_BaseSquare extends PIXI.Sprite {
     };
 
     updateCursor() {
-        var blinkCount = this._animationCount;
-        var opacity = this.opacity;
+        let blinkCount = this._animationCount;
+        let opacity = this.opacity;
         if (blinkCount < 20) {
             opacity -= blinkCount * 4;
         } else {
@@ -2111,13 +2234,20 @@ class Sprite_BaseSquare extends PIXI.Sprite {
     setBattler(battler) {
         this._battler = battler;
     };
+
+    static destroyBaseTexture() {
+        this._texture.baseTexture.destroy();
+    }
 }
 
+Sprite_BaseSquare._squareSide = 64;
+Sprite_BaseSquare._texture = null;
+
 Object.defineProperty(Sprite_BaseSquare.prototype, 'opacity', {
-    get: function() {
+    get: function () {
         return this.alpha * 255;
     },
-    set: function(value) {
+    set: function (value) {
         this.alpha = value.clamp(0, 255) / 255;
     },
     configurable: true
@@ -2134,7 +2264,6 @@ class Sprite_Squares extends Sprite_Base {
         this._spacing = 40;
         this._offset = 10;
         this._counter = 0;
-        this._isEnemy = null;
     }
 
     update() {
@@ -2142,40 +2271,76 @@ class Sprite_Squares extends Sprite_Base {
     };
 
     createSquares(index) {
-        var square, d, dy, totalWidth;
-        d = this._spacing;
-        dy = this._offset;
-        totalWidth = -d;
-        this._isEnemy = index === 1 ? false : true;
+        let square,
+            d = this._spacing,
+            dy = this._offset;
 
-        for (var i = 0; i < 9; i++) {
+        for (let i = 0; i < 5; i++) {
             square = new Sprite_BaseSquare();
             square.anchor.set(0.5, 0.3);
 
-            if (i % 3 === 0) totalWidth += square.width + d;
             if (index === 1) {
-                square.x = (2- Math.floor(i / 3)) * (square.width + d);
+                square.x = (2 - Math.floor(i / 3)) * (square.width + d);
             } else {
                 square.x = (Math.floor(i / 3)) * (square.width + d);
             }
             square.y = (i % 3) * (square.width + d);
 
-            if (i >= 3 && i <= 5) square.y -= dy;
+            if (i >= 3 && i <= 5) square.y += square.height;
             this.addChild(square);
         }
-        this._totalWidth = totalWidth;
+
+        this._totalWidth = square.width * 2 + d;
     };
 
-    placeSquares() {
-        var sw, sh, bw, bh;
-        sw = SceneManager._screenWidth;
-        sh = SceneManager._screenHeight;
-        bw = sw * 0.1;
-        bh = sh * 0.5;
-        if (!this._isEnemy) {
-            this.position.set(bw, bh);
-        } else this.position.set(sw - bw - this._totalWidth, bh);
+    placeSquares(index) {
+        let sw = SceneManager._screenWidth,
+            sh = SceneManager._screenHeight,
+            dw = 216,
+            dh = sh * 0.5;
+        if (index === 1) {
+            this.position.set(dw, dh);
+        } else {
+            this.position.set(sw - dw - this._totalWidth, dh);
+        }
     };
+
+    square(index) {
+        return this.children[index];
+    }
+
+    squareX(index) {
+        return this.x + this.square(index).x;
+    }
+
+    squareY(index) {
+        return this.y + this.square(index).y;
+    }
+
+}
+
+class Sprite_TurnIndicator extends PIXI.Container {
+    constructor() {
+        super();
+        this.createLine();
+        this.createCircle();
+    }
+
+    createLine() {
+        let base = new PIXI.Graphics();
+        base.beginFill(0xffffff);
+        base.drawRect(0, 0, 240, 8);
+        base.endFill();
+        this._line = new PIXI.Sprite(base.generateCanvasTexture());
+        this._line.anchor.set(0.5);
+        this.addChild(this._line);
+    }
+
+    createCircle() {
+        this._circle = PIXI.Sprite.fromImage('img/system/Circle1.png');
+        this._circle.anchor.set(0.5);
+        this.addChild(this._circle);
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -2188,7 +2353,6 @@ class Spriteset_Base extends Sprite {
         super();
         this.setFrame(0, 0, Graphics.width, Graphics.height);
         this._tone = [0, 0, 0, 0];
-        this.opaque = true;
         this.createLowerLayer();
         this.createToneChanger();
         this.createUpperLayer();
@@ -2230,9 +2394,9 @@ class Spriteset_Base extends Sprite {
     };
 
     createWebGLToneChanger() {
-        var margin = 48;
-        var width = Graphics.width + margin * 2;
-        var height = Graphics.height + margin * 2;
+        let margin = 48;
+        let width = Graphics.width + margin * 2;
+        let height = Graphics.height + margin * 2;
         this._toneFilter = new ToneFilter();
         this._baseSprite.filters = [this._toneFilter];
         this._baseSprite.filterArea = new Rectangle(-margin, -margin, width, height);
@@ -2244,13 +2408,13 @@ class Spriteset_Base extends Sprite {
     };
 
     createPictures() {
-        var width = Graphics.boxWidth;
-        var height = Graphics.boxHeight;
-        var x = (Graphics.width - width) / 2;
-        var y = (Graphics.height - height) / 2;
+        let width = Graphics.boxWidth;
+        let height = Graphics.boxHeight;
+        let x = (Graphics.width - width) / 2;
+        let y = (Graphics.height - height) / 2;
         this._pictureContainer = new Sprite();
         this._pictureContainer.setFrame(x, y, width, height);
-        for (var i = 1; i <= $gameScreen.maxPictures(); i++) {
+        for (let i = 1; i <= $gameScreen.maxPictures(); i++) {
             this._pictureContainer.addChild(new Sprite_Picture(i));
         }
         this.addChild(this._pictureContainer);
@@ -2269,14 +2433,14 @@ class Spriteset_Base extends Sprite {
     };
 
     updateScreenSprites() {
-        var color = $gameScreen.flashColor();
+        let color = $gameScreen.flashColor();
         this._flashSprite.setColor(color[0], color[1], color[2]);
         this._flashSprite.opacity = color[3];
         this._fadeSprite.opacity = 255 - $gameScreen.brightness();
     };
 
     updateToneChanger() {
-        var tone = $gameScreen.tone();
+        let tone = $gameScreen.tone();
         if (!this._tone.equals(tone)) {
             this._tone = tone.clone();
             if (Graphics.isWebGL()) {
@@ -2288,26 +2452,27 @@ class Spriteset_Base extends Sprite {
     };
 
     updateWebGLToneChanger() {
-        var tone = this._tone;
+        let tone = this._tone;
         this._toneFilter.reset();
         this._toneFilter.adjustTone(tone[0], tone[1], tone[2]);
         this._toneFilter.adjustSaturation(-tone[3]);
     };
 
     updateCanvasToneChanger() {
-        var tone = this._tone;
+        let tone = this._tone;
         this._toneSprite.setTone(tone[0], tone[1], tone[2], tone[3]);
     };
 
     updatePosition() {
-        var screen = $gameScreen;
-        var scale = screen.zoomScale();
+        let screen = $gameScreen;
+        let scale = screen.zoomScale();
         this.scale.x = scale;
         this.scale.y = scale;
         this.x = Math.round(-screen.zoomX() * (scale - 1));
         this.y = Math.round(-screen.zoomY() * (scale - 1));
         this.x += Math.round(screen.shake());
     };
+
 }
 
 //-----------------------------------------------------------------------------
@@ -2340,8 +2505,8 @@ class Spriteset_Map extends Spriteset_Base {
     };
 
     hideCharacters() {
-        for (var i = 0; i < this._characterSprites.length; i++) {
-            var sprite = this._characterSprites[i];
+        for (let i = 0; i < this._characterSprites.length; i++) {
+            let sprite = this._characterSprites[i];
             if (!sprite.isTile()) {
                 sprite.hide();
             }
@@ -2372,11 +2537,11 @@ class Spriteset_Map extends Spriteset_Base {
     loadTileset() {
         this._tileset = $gameMap.tileset();
         if (this._tileset) {
-            var tilesetNames = this._tileset.tilesetNames;
-            for (var i = 0; i < tilesetNames.length; i++) {
+            let tilesetNames = this._tileset.tilesetNames;
+            for (let i = 0; i < tilesetNames.length; i++) {
                 this._tilemap.bitmaps[i] = ImageManager.loadTileset(tilesetNames[i]);
             }
-            var newTilesetFlags = $gameMap.tilesetFlags();
+            let newTilesetFlags = $gameMap.tilesetFlags();
             this._tilemap.refreshTileset();
             if (!this._tilemap.flags.equals(newTilesetFlags)) {
                 this._tilemap.refresh();
@@ -2397,7 +2562,7 @@ class Spriteset_Map extends Spriteset_Base {
             this._characterSprites.push(new Sprite_Character(follower));
         }, this);
         this._characterSprites.push(new Sprite_Character($gamePlayer));
-        for (var i = 0; i < this._characterSprites.length; i++) {
+        for (let i = 0; i < this._characterSprites.length; i++) {
             this._tilemap.addChild(this._characterSprites[i]);
         }
     };
@@ -2432,7 +2597,7 @@ class Spriteset_Map extends Spriteset_Base {
      * Simple fix for canvas parallax issue, destroy old parallax and readd to  the tree.
      */
     _canvasReAddParallax() {
-        var index = this._baseSprite.children.indexOf(this._parallax);
+        let index = this._baseSprite.children.indexOf(this._parallax);
         this._baseSprite.removeChild(this._parallax);
         this._parallax = new TilingSprite();
         this._parallax.move(0, 0, Graphics.width, Graphics.height);
@@ -2444,7 +2609,7 @@ class Spriteset_Map extends Spriteset_Base {
         if (this._parallaxName !== $gameMap.parallaxName()) {
             this._parallaxName = $gameMap.parallaxName();
 
-            if (this._parallax.bitmap && Graphics.isWebGL() != true) {
+            if (this._parallax.bitmap && !Graphics.isWebGL()) {
                 this._canvasReAddParallax();
             } else {
                 this._parallax.bitmap = ImageManager.loadParallax(this._parallaxName);
@@ -2462,7 +2627,7 @@ class Spriteset_Map extends Spriteset_Base {
     };
 
     updateShadow() {
-        var airship = $gameMap.airship();
+        let airship = $gameMap.airship();
         this._shadowSprite.x = airship.shadowX();
         this._shadowSprite.y = airship.shadowY();
         this._shadowSprite.opacity = airship.shadowOpacity();
@@ -2482,7 +2647,7 @@ class Spriteset_Map extends Spriteset_Base {
 // The set of sprites on the battle screen.
 
 class Spriteset_Battle extends Spriteset_Base {
-    constructor(){
+    constructor() {
         super();
         this._battlebackLocated = false;
     }
@@ -2493,13 +2658,14 @@ class Spriteset_Battle extends Spriteset_Base {
         this.createBattleField();
         this.createBattleback();
         this.createSquares();
+        this.createAllGroups();
         this.createEnemies();
         this.createActors();
     };
 
     createBackground() {
         this._backgroundSprite = new Sprite();
-        this._backgroundSprite.bitmap = SceneManager.backgroundBitmap();
+        this._backgroundSprite.bitmap = SceneManager.backgroundBitmap;
         this._baseSprite.addChild(this._backgroundSprite);
     };
 
@@ -2508,10 +2674,10 @@ class Spriteset_Battle extends Spriteset_Base {
     };
 
     createBattleField() {
-        var width = Graphics.boxWidth;
-        var height = Graphics.boxHeight;
-        var x = (Graphics.width - width) / 2;
-        var y = (Graphics.height - height) / 2;
+        let width = Graphics.boxWidth;
+        let height = Graphics.boxHeight;
+        let x = (Graphics.width - width) / 2;
+        let y = (Graphics.height - height) / 2;
         this._battleField = new Sprite();
         this._battleField.setFrame(x, y, width, height);
         this._battleField.x = x;
@@ -2520,11 +2686,11 @@ class Spriteset_Battle extends Spriteset_Base {
     };
 
     createBattleback() {
-        var margin = 32;
-        var x = -this._battleField.x - margin;
-        var y = -this._battleField.y - margin;
-        var width = Graphics.width + margin * 2;
-        var height = Graphics.height + margin * 2;
+        let margin = 32;
+        let x = -this._battleField.x - margin;
+        let y = -this._battleField.y - margin;
+        let width = Graphics.width + margin * 2;
+        let height = Graphics.height + margin * 2;
         this._back1Sprite = new TilingSprite();
         this._back2Sprite = new TilingSprite();
         this._back1Sprite.bitmap = this.battleback1Bitmap();
@@ -2538,10 +2704,10 @@ class Spriteset_Battle extends Spriteset_Base {
 
     locateBattleback() {
         if (!this._battlebackLocated) {
-            var width = this._battleField.width;
-            var height = this._battleField.height;
-            var sprite1 = this._back1Sprite;
-            var sprite2 = this._back2Sprite;
+            let width = this._battleField.width;
+            let height = this._battleField.height;
+            let sprite1 = this._back1Sprite;
+            let sprite2 = this._back2Sprite;
             sprite1.origin.x = sprite1.x + (sprite1.bitmap.width - width) / 2;
             sprite2.origin.x = sprite1.y + (sprite2.bitmap.width - width) / 2;
             if ($gameSystem.isSideView()) {
@@ -2614,22 +2780,27 @@ class Spriteset_Battle extends Spriteset_Base {
 
     terrainBattleback1Name(type) {
         switch (type) {
-            case 24: case 25:
-            return 'Wasteland';
-            case 26: case 27:
-            return 'DirtField';
-            case 32: case 33:
-            return 'Desert';
+            case 24:
+            case 25:
+                return 'Wasteland';
+            case 26:
+            case 27:
+                return 'DirtField';
+            case 32:
+            case 33:
+                return 'Desert';
             case 34:
                 return 'Lava1';
             case 35:
                 return 'Lava2';
-            case 40: case 41:
-            return 'Snowfield';
+            case 40:
+            case 41:
+                return 'Snowfield';
             case 42:
                 return 'Clouds';
-            case 4: case 5:
-            return 'PoisonSwamp';
+            case 4:
+            case 5:
+                return 'PoisonSwamp';
             default:
                 return null;
         }
@@ -2637,22 +2808,32 @@ class Spriteset_Battle extends Spriteset_Base {
 
     terrainBattleback2Name(type) {
         switch (type) {
-            case 20: case 21:
-            return 'Forest';
-            case 22: case 30: case 38:
-            return 'Cliff';
-            case 24: case 25: case 26: case 27:
-            return 'Wasteland';
-            case 32: case 33:
-            return 'Desert';
-            case 34: case 35:
-            return 'Lava';
-            case 40: case 41:
-            return 'Snowfield';
+            case 20:
+            case 21:
+                return 'Forest';
+            case 22:
+            case 30:
+            case 38:
+                return 'Cliff';
+            case 24:
+            case 25:
+            case 26:
+            case 27:
+                return 'Wasteland';
+            case 32:
+            case 33:
+                return 'Desert';
+            case 34:
+            case 35:
+                return 'Lava';
+            case 40:
+            case 41:
+                return 'Snowfield';
             case 42:
                 return 'Clouds';
-            case 4: case 5:
-            return 'PoisonSwamp';
+            case 4:
+            case 5:
+                return 'PoisonSwamp';
         }
     };
 
@@ -2677,25 +2858,58 @@ class Spriteset_Battle extends Spriteset_Base {
     };
 
     createSquares() {
-        this._squaresSprite1 = new Sprite_Squares();
-        this._squaresSprite2 = new Sprite_Squares();
-        this._squaresSprite1.createSquares(1);
-        this._squaresSprite2.createSquares(2);
-        this._squaresSprite1.placeSquares();
-        this._squaresSprite2.placeSquares();
-        this._battleField.addChild(this._squaresSprite1);
-        this._battleField.addChild(this._squaresSprite2);
+        this._squares1 = new Sprite_Squares();
+        this._squares2 = new Sprite_Squares();
+        this._squares1.createSquares(1);
+        this._squares2.createSquares(2);
+        this._squares1.placeSquares(1);
+        this._squares2.placeSquares(2);
+        this._battleField.addChild(this._squares1);
+        this._battleField.addChild(this._squares2);
     };
 
-    createEnemies() {
-        var enemies = $gameTroop.members();
-        var sprites = [];
+    createAllGroups() {
+        this.createShadowGroup();
+        this.createMainGroup();
+        this.createOverlayGroup();
+        this.createUIGroup();
+    }
 
-        for (var i = 0; i < enemies.length; i++) {
-            sprites[i] = new Sprite_Battler(enemies[i], true);
+    createShadowGroup() {
+        this._mainGroup = new PIXI.display.Group(0, true);
+        this._mainGroup.on('sort', function (sprite) {
+            sprite.zOrder = -sprite.y;
+        });
+    }
+
+    createMainGroup() {
+        this._mainGroup = new PIXI.display.Group(1, true);
+        this._mainGroup.on('sort', function (sprite) {
+            sprite.zOrder = -sprite.y;
+        });
+
+    }
+
+    createOverlayGroup() {
+        this._overlayGroup = new PIXI.display.Group(2, true);
+        this._overlayGroup.on('sort', function (sprite) {
+            sprite.zOrder = -sprite.y;
+        });
+    }
+
+    createUIGroup() {
+        this._UIGroup = new PIXI.display.Group(3, false);
+    }
+
+    createEnemies() {
+        let enemies = $gameTroop.members();
+        let sprites = [];
+
+        for (let i = 0; i < enemies.length; i++) {
+            sprites[i] = new Sprite_Enemy(enemies[i], true);
         }
         sprites.sort(this.compareEnemySprite.bind(this));
-        for (var i = 0; i < enemies.length; i++) {
+        for (let i = 0; i < enemies.length; i++) {
             this._battleField.addChild(sprites[i]);
         }
 
@@ -2711,35 +2925,36 @@ class Spriteset_Battle extends Spriteset_Base {
         }
     };
 
-
     createActors() {
         this._actorSprites = [];
-        for (var i = 0; i < $gameParty.maxBattleMembers(); i++) {
-            this._actorSprites[i] = new Sprite_Battler();
+        for (let i = 0; i < $gameParty.maxBattleMembers(); i++) {
+            this._actorSprites[i] = new Sprite_Actor();
             this._battleField.addChild(this._actorSprites[i]);
         }
         this.setActors();
     };
 
     setActors() {
-        var members = $gameParty.battleMembers();
-        var squares = this._squaresSprite1;
-        for (var i = 0; i < this._actorSprites.length; i++) {
+        let members = $gameParty.battleMembers();
+        let squares = this._squares1;
+        for (let i = 0; i < this._actorSprites.length; i++) {
             this._actorSprites[i].setBattler(members[i]);
             if (!!members[i]) {
-                this._actorSprites[i].setSquare(squares, members[i].index());
-                squares.children[members[i].index()].setBattler(members[i]);
+                let index = members[i].index();
+                this._actorSprites[i].setSquare(squares, index);
+                this._actorSprites[i].parentGroup = this._mainGroup;
+                squares.square(index).setBattler(members[i]);
             }
         }
     };
 
     setEnemies() {
-        var members = $gameTroop.members();
-        var squares = this._squaresSprite2;
-        for (var i = 0; i < this._enemySprites.length; i++) {
+        let members = $gameTroop.members();
+        let squares = this._squares2;
+        for (let i = 0; i < this._enemySprites.length; i++) {
             this._enemySprites[i].setBattler(members[i]);
             this._enemySprites[i].setSquare(squares, i);
-            squares.children[i].setBattler(members[i]);
+            squares.square(i).setBattler(members[i]);
         }
     };
 
@@ -2748,19 +2963,19 @@ class Spriteset_Battle extends Spriteset_Base {
     };
 
     isAnimationPlaying() {
-        return this.battlerSprites().some(function(sprite) {
+        return this.battlerSprites().some(function (sprite) {
             return sprite.isAnimationPlaying();
         });
     };
 
     isEffecting() {
-        return this.battlerSprites().some(function(sprite) {
+        return this.battlerSprites().some(function (sprite) {
             return sprite.isEffecting();
         });
     };
 
     isAnyoneMoving() {
-        return this.battlerSprites().some(function(sprite) {
+        return this.battlerSprites().some(function (sprite) {
             return sprite.isMoving();
         });
     };
@@ -2769,135 +2984,3 @@ class Spriteset_Battle extends Spriteset_Base {
         return this.isAnimationPlaying() || this.isAnyoneMoving();
     };
 }
-
-//=============================================================================================
-//The superclass for all animation
-
-class Animation_Base extends PIXI.extras.AnimatedSprite {
-    constructor() {
-        super();
-    }
-
-    static makeFrames(sheet, index, frameNumber, framePerRow, width, height, offsetX, offsetY){
-        var rectangle, frame, frames = [];
-        for (var i = 0; i < frameNumber; i++) {
-            rectangle = new Rectangle((i % framePerRow) * width + offsetX
-                , Math.floor(i / framePerRow) * height + offsetY, width, height);
-            frame = new PIXI.Texture(TextureCache["img/images/" + sheet + index + ".png"], rectangle);
-            frames.push(frame);
-        }
-        return frames;
-    };
-}
-
-class Animation_Effect extends Animation_Base {
-    constructor(){
-        var textures = Animation_Bsse.makeFrames(sheet, index, frameNumber, framePerRow, width, height, 0, 0);
-        super(textures);
-        this.loop = false;
-        this.position.set(0, 0);
-        this.anchor.set(0.5);
-        this.animationSpeed = 0.2;
-        this.visible = false;
-        SceneManager._scene.addChild(this);
-    }
-
-    drawEffect(sheet, index, frameNumber, framePerRow, width, height) {
-        var textures = this.makeFrames(sheet, index, frameNumber, framePerRow, width, height, 0, 0);
-        AnimatedSprite.call(this, textures);
-        this.loop = false;
-        this.position.set(0, 0);
-        this.anchor.set(0.5);
-        this.animationSpeed = 0.2;
-        this.visible = false;
-        SceneManager._scene.addChild(this);
-    };
-}
-
-//=============================================================================================
-//Projectile
-
-class Sprite_Projectile extends Sprite_Base {
-    constructor() {
-        super();
-    }
-
-    drawProjectile(filename) {
-        var texture = this.loadProjectile(filename);
-        PIXI.Sprite.call(this, texture);
-        this.position.set(0, 0);
-        this.anchor.set(0.5);
-        SceneManager._scene.addChild(this);
-    };
-}
-
-//=============================================================================================
-//Button
-
-class Sprite_Button1 extends Sprite_Base {
-    constructor() {
-        super();
-    }
-
-    drawButton(name) {
-        var bitmap = ImageManager.loadSystem('Button');
-        Sprite_Base.prototype.initialize.call(bitmap);
-        this._bitmap = bitmap;
-        this.width = Sprite_Button1.SIZES[name].width;
-        this.height = Sprite_Button1.SIZES[name].height;
-        this.interactive = true;
-        this.buttonMode = true;
-    };
-
-    drawDescription() {
-        this.description = new PIXI.Container();
-        this.description.window = Sprite_Base.prototype.drawComp("roundedRect", {
-            color: 0x333333, width: 200, height: 200,
-            radius: 3, lineWidth: 3, lineColor: 0xcccccc
-        });
-        this.description.text = new PIXI.Text("", {fontSize: 16, fill: "white", fontFamily: "Arial"});
-        this.description.addChild(this.description.window);
-        this.description.addChild(this.description.text);
-        this.description.visible = false;
-    };
-
-    showDescription() {
-        this.description.visible = true;
-        if (BattleManager.currentChar.skills[this.value]) {
-            this.description.text.text = BattleManager.currentChar.skills[this.value].description;
-        } else {
-            this.description.window.visible = false;
-        }
-        this.description.window.width = this.description.text.width;
-        this.description.window.height = this.description.text.height;
-        this.description.x = this.x;
-        this.description.y = this.y - 0.05 * SceneManager._screenHeight
-    };
-
-    hideDescription() {
-        this.description.visible = false;
-    };
-
-    drawText(text, style) {
-        this.text = new PIXI.Text(text, style);
-    };
-
-    changeTexture(index) {
-        var rectangle = new Rectangle(288 * (index % 8), Math.floor(index / 8) * 288, 288, 288);
-        this.texture = new PIXI.Texture(TextureCache["img/images/Skill0.png"], rectangle);
-    };
-
-}
-
-Sprite_Button1.SIZES = {
-    skill: {width: 0.05 * SceneManager._screenWidth, height: 0.5 * SceneManager._screenWidth},
-    title: {width: 0.22 * SceneManager._screenWidth, height: 0.11 * SceneManager._screenHeight},
-    navigator: {width: 0.12 * SceneManager._screenWidth, height: 0.5 * SceneManager._screenHeight},
-    gold: {width: 0.5 * SceneManager._screenWidth, height: 0.5 * SceneManager._screenHeight},
-};
-
-
-/*
-Anti alias makes the sprite wonky, updateFrame() 9 is added to stretch the gap
-
- */

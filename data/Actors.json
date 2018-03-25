@@ -1,8 +1,8 @@
 [
 null,
-{"id":1,"battlerName":"Pack1","characterIndex":2,"characterName":"Actor3","classId":1,"equips":[1,1,2,3,4],"faceIndex":2,"faceName":"Actor3","traits":[],"initialLevel":1,"maxLevel":99,"name":"Test Battler A","nickname":"","note":"","profile":""},
-{"id":2,"battlerName":"Pack1","characterIndex":6,"characterName":"Actor1","classId":2,"equips":[2,0,2,3,4],"faceIndex":6,"faceName":"Actor1","traits":[],"initialLevel":1,"maxLevel":99,"name":"Test Battler B","nickname":"","note":"","profile":""},
-{"id":3,"battlerName":"Pack1","characterIndex":0,"characterName":"Actor3","classId":3,"equips":[3,0,2,3,4],"faceIndex":0,"faceName":"Actor3","traits":[],"initialLevel":1,"maxLevel":99,"name":"Test Battler C","nickname":"","note":"","profile":""},
-{"id":4,"battlerName":"Pack1","characterIndex":0,"characterName":"Actor4","classId":1,"equips":[0,0,0,0,0],"faceIndex":0,"faceName":"Actor4","traits":[],"initialLevel":1,"maxLevel":99,"name":"Test Battler D","nickname":"","note":"","profile":""},
-{"id":5,"battlerName":"Pack1","characterIndex":1,"characterName":"Actor4","classId":1,"equips":[0,0,0,0,0],"faceIndex":1,"faceName":"Nature","traits":[],"initialLevel":1,"maxLevel":99,"name":"Test Battler E","nickname":"","note":"","profile":""}
+{"id":1,"battlerName":"Test","characterIndex":2,"characterName":"Actor3","classId":1,"equips":[1,1,2,3,4],"faceIndex":2,"faceName":"Actor3","traits":[{"code":41,"dataId":2,"value":1},{"code":43,"dataId":5,"value":1},{"code":43,"dataId":9,"value":1}],"initialLevel":1,"maxLevel":99,"name":"Fred","nickname":"","note":"","profile":""},
+{"id":2,"battlerName":"Test","characterIndex":6,"characterName":"Actor1","classId":2,"equips":[2,0,2,3,4],"faceIndex":6,"faceName":"Actor1","traits":[],"initialLevel":1,"maxLevel":99,"name":"Test Battler B","nickname":"","note":"","profile":""},
+{"id":3,"battlerName":"Test","characterIndex":0,"characterName":"Actor3","classId":3,"equips":[3,0,2,3,4],"faceIndex":0,"faceName":"Actor3","traits":[],"initialLevel":1,"maxLevel":99,"name":"Test Battler C","nickname":"","note":"","profile":""},
+{"id":4,"battlerName":"Test","characterIndex":0,"characterName":"Actor4","classId":1,"equips":[0,0,0,0,0],"faceIndex":3,"faceName":"Actor4","traits":[],"initialLevel":1,"maxLevel":99,"name":"Garoth","nickname":"","note":"","profile":""},
+{"id":5,"battlerName":"Test","characterIndex":1,"characterName":"Actor4","classId":4,"equips":[0,0,0,0,0],"faceIndex":1,"faceName":"Nature","traits":[{"code":41,"dataId":4,"value":1}],"initialLevel":3,"maxLevel":99,"name":"Cat","nickname":"","note":"","profile":""}
 ]
